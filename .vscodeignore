@@ -1,0 +1,12 @@
+.vscode/**
+.git/**
+.github/**
+src/**
+node_modules/**
+tsconfig.json
+esbuild.js
+*.vsix
+.gitignore
+build-simulator.sh
+pxl-software/**
+dist/webview-debug.*

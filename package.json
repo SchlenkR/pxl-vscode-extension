@@ -1,0 +1,227 @@
+{
+  "name": "pxl-simulator",
+  "displayName": "PXL Clock Simulator",
+  "description": "Develop and preview pixograms for the PXL Clock directly in VS Code",
+  "version": "0.1.0",
+  "publisher": "pxlclock",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SchlenkR/pxl-vscode-extension"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "pxl",
+    "pixel",
+    "led",
+    "clock",
+    "simulator"
+  ],
+  "extensionDependencies": [
+    "ms-dotnettools.csharp",
+    "Ionide.Ionide-fsharp"
+  ],
+  "activationEvents": [
+    "onWebviewPanel:pxl.simulatorCanvas"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "pxl.openSimulator",
+        "title": "PXL Clock: Open Simulator",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "pxl.runScript",
+        "title": "PXL Clock: Run Current Script",
+        "icon": "$(play)"
+      },
+      {
+        "command": "pxl.stopScript",
+        "title": "PXL Clock: Stop Script",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "pxl.restartScript",
+        "title": "PXL Clock: Restart Script",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "pxl.refreshFiles",
+        "title": "PXL Clock: Refresh Files",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "pxl.openFile",
+        "title": "PXL Clock: Open File"
+      },
+      {
+        "command": "pxl.runFromTree",
+        "title": "Run Pixogram",
+        "icon": "$(play)"
+      },
+      {
+        "command": "pxl.refreshStatus",
+        "title": "PXL Clock: Refresh Status",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "pxl.showLog",
+        "title": "PXL Clock: Show Log",
+        "icon": "$(output)"
+      },
+      {
+        "command": "pxl.openSimulatorToSide",
+        "title": "PXL Clock: Open Simulator to Side",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "pxl.publishPixogram",
+        "title": "PXL Clock: Publish Pixogram",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "pxl.publishFromTree",
+        "title": "Publish to Clock",
+        "icon": "$(cloud-upload)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pxl-explorer",
+          "title": "PXL Clock",
+          "icon": "media/pxl-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "pxl-explorer": [
+        {
+          "id": "pxlSimulatorStatus",
+          "name": "Simulator",
+          "icon": "$(server-process)"
+        },
+        {
+          "id": "pxlSimulatorView",
+          "type": "webview",
+          "name": "Preview",
+          "icon": "$(preview)"
+        },
+        {
+          "id": "pxlFiles",
+          "name": "Pixograms",
+          "icon": "$(file-code)"
+        },
+        {
+          "id": "pxlDeviceConfig",
+          "type": "webview",
+          "name": "Devices",
+          "icon": "$(broadcast)"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "PXL Clock",
+      "properties": {
+        "pxl.simulatorHost": {
+          "type": "string",
+          "default": "http://127.0.0.1:5001",
+          "description": "URL of the PXL Simulator Host"
+        }
+      }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceExtname == .cs",
+          "command": "pxl.runScript",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .cs",
+          "command": "pxl.publishPixogram",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "pxl.refreshStatus",
+          "when": "view == pxlSimulatorStatus",
+          "group": "navigation"
+        },
+        {
+          "command": "pxl.showLog",
+          "when": "view == pxlSimulatorStatus",
+          "group": "navigation"
+        },
+        {
+          "command": "pxl.openSimulator",
+          "when": "view == pxlSimulatorStatus",
+          "group": "navigation"
+        },
+        {
+          "command": "pxl.refreshFiles",
+          "when": "view == pxlFiles",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "pxl.runFromTree",
+          "when": "view == pxlFiles && viewItem == csFile",
+          "group": "inline"
+        },
+        {
+          "command": "pxl.publishFromTree",
+          "when": "view == pxlFiles && viewItem == csFile",
+          "group": "inline"
+        },
+        {
+          "command": "pxl.stopScript",
+          "when": "view == pxlSimulatorStatus && viewItem == watcher",
+          "group": "inline"
+        },
+        {
+          "command": "pxl.restartScript",
+          "when": "view == pxlSimulatorStatus && viewItem == watcher",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "node esbuild.js --production",
+    "build": "node esbuild.js --production",
+    "build:simulator": "bash build-simulator.sh --current",
+    "build:simulator:all": "bash build-simulator.sh",
+    "watch": "node esbuild.js --watch",
+    "package": "bash build-simulator.sh --current && npx @vscode/vsce package",
+    "package:all": "bash build-simulator.sh && npx @vscode/vsce package",
+    "publish": "bash build-simulator.sh && npx @vscode/vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.18.1",
+    "esbuild": "^0.24.0",
+    "pxl-device-view": "file:../pxl-software/src/pxl-device-view",
+    "pxl-receiver-canvas": "file:../pxl-software/src/pxl-receiver-canvas",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@microsoft/signalr": "^8.0.0",
+    "ws": "^8.19.0"
+  }
+}

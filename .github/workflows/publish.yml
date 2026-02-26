@@ -1,0 +1,38 @@
+name: Publish Extension
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: CuminAndPotato/pxl-software
+          path: pxl-software
+          token: ${{ secrets.GH_PAT_PXL_SOFTWARE }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      # Build simulator for all platforms (cross-compilation via dotnet publish)
+      - name: Build Simulator Host (all platforms)
+        run: bash build-simulator.sh
+        env:
+          PXL_SOFTWARE_REPO: ${{ github.workspace }}/pxl-software
+
+      # vscode:prepublish runs esbuild only (simulator already built above)
+      - name: Publish to Marketplace
+        run: npx @vscode/vsce publish --pat "${{ secrets.AZURE_DEVOPS_VSCE_PXLCLOCK_PAT }}"
