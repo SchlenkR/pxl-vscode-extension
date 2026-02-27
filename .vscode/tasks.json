@@ -37,7 +37,18 @@
     {
       "label": "PXL-EXT :: Create VSIX Symlink",
       "type": "shell",
-      "command": "rm -rf ~/.vscode/extensions/pxlclock.pxl-simulator-0.1.0 && ln -s ${workspaceFolder} ~/.vscode/extensions/pxlclock.pxl-simulator-0.1.0 && echo 'Symlink created: ~/.vscode/extensions/pxlclock.pxl-simulator-0.1.0 → ${workspaceFolder}'",
+      "command": "rm -rf ~/.vscode/extensions/pxlclock.pxl-clock-1.0.0 && ln -s ${workspaceFolder} ~/.vscode/extensions/pxlclock.pxl-clock-1.0.0 && echo 'Symlink created: ~/.vscode/extensions/pxlclock.pxl-clock-1.0.0 → ${workspaceFolder}'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "PXL-EXT :: Publish Extension",
+      "type": "npm",
+      "script": "publish",
+      "group": "build",
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",

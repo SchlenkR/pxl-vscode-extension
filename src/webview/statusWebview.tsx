@@ -120,25 +120,20 @@ function App() {
     <div style={S.root}>
       {/* --- Status --- */}
       <div style={S.statusRow}>
-        <span style={{ ...S.dot, background: status.hostOnline ? "#4caf50" : "#f44336" }} />
+        <span style={S.statusIconCell}><span style={{ ...S.dot, background: status.hostOnline ? "#4caf50" : "#f44336" }} /></span>
         <span style={S.statusLabel}>Simulator Host</span>
         <span style={S.statusDesc}>port {status.port}</span>
-        {status.hostOnline && (
-          <>
-            <span style={{ ...S.statusDesc, margin: "0 2px" }}>&middot;</span>
-            <span style={{ ...S.statusIcon, color: status.watcherRunning ? "#4caf50" : "var(--vscode-descriptionForeground)" }}>
-              {status.watcherRunning ? "\u25B6" : "\u275A\u275A"}
-            </span>
-            <span style={S.statusLabel}>{status.watcherRunning ? "Running" : "Idle"}</span>
-            {status.watcherRunning && <span style={S.statusDesc}>{fileName}</span>}
-            {status.watcherRunning && (
-              <div style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
-                <button style={S.smallBtn} title="Stop" onClick={() => vscodeApi.postMessage({ command: "stop" })}>{Icon.stop}</button>
-                <button style={S.smallBtn} title="Restart" onClick={() => vscodeApi.postMessage({ command: "restart" })}>{Icon.restart}</button>
-              </div>
-            )}
-          </>
-        )}
+      </div>
+      <div style={S.statusRow}>
+        <span style={{ ...S.statusIconCell, color: status.hostOnline && status.watcherRunning ? "#4caf50" : "var(--vscode-descriptionForeground)", fontSize: 10 }}>
+          {status.hostOnline && status.watcherRunning ? "\u25B6" : "\u275A\u275A"}
+        </span>
+        <span style={S.statusLabel}>{status.hostOnline && status.watcherRunning ? "Running" : "Idle"}</span>
+        {status.watcherRunning && <span style={S.fileName} title={fileName}>{fileName}</span>}
+        <div style={{ marginLeft: "auto", display: "flex", gap: 2, visibility: status.watcherRunning ? "visible" : "hidden" }}>
+          <button style={S.smallBtn} title="Stop" onClick={() => vscodeApi.postMessage({ command: "stop" })}>{Icon.stop}</button>
+          <button style={S.smallBtn} title="Restart" onClick={() => vscodeApi.postMessage({ command: "restart" })}>{Icon.restart}</button>
+        </div>
       </div>
 
       <div style={S.divider} />
@@ -226,10 +221,11 @@ function App() {
 const S: Record<string, React.CSSProperties> = {
   root: { padding: "8px 12px", fontFamily: "var(--vscode-font-family)", fontSize: 13, color: "var(--vscode-foreground)" },
   statusRow: { display: "flex", alignItems: "center", gap: 6, padding: "3px 0" },
-  dot: { width: 8, height: 8, borderRadius: "50%", flexShrink: 0 },
-  statusIcon: { fontSize: 10, flexShrink: 0, width: 14, textAlign: "center" as const },
+  statusIconCell: { width: 14, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" },
+  dot: { width: 8, height: 8, borderRadius: "50%" },
   statusLabel: { fontWeight: 500 },
   statusDesc: { fontSize: 12, color: "var(--vscode-descriptionForeground)" },
+  fileName: { fontSize: 12, color: "var(--vscode-descriptionForeground)", whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 },
   smallBtn: { background: "none", border: "none", color: "var(--vscode-foreground)", cursor: "pointer", padding: 3, borderRadius: 3, display: "flex", alignItems: "center", opacity: 0.7 },
   divider: { height: 1, background: "var(--vscode-widget-border, #333)", margin: "8px 0" },
   sectionRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, marginBottom: 6 },

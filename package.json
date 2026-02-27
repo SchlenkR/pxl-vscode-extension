@@ -1,8 +1,8 @@
 {
-  "name": "pxl-simulator",
-  "displayName": "PXL Clock Simulator",
+  "name": "pxl-clock",
+  "displayName": "PXL Clock",
   "description": "Develop and preview pixograms for the PXL Clock directly in VS Code",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "pxlclock",
   "icon": "media/icon.png",
   "repository": {
@@ -191,7 +191,7 @@
     "watch": "node esbuild.js --watch",
     "package": "bash build-simulator.sh --current && npx @vscode/vsce package",
     "package:all": "bash build-simulator.sh && npx @vscode/vsce package",
-    "publish": "bash build-simulator.sh && npx @vscode/vsce publish"
+    "publish": "bash build-simulator.sh && npx @vscode/vsce publish ${AZURE_DEVOPS_VSCE_PXLCLOCK_PAT:+--pat $AZURE_DEVOPS_VSCE_PXLCLOCK_PAT}"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
