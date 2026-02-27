@@ -1,6 +1,6 @@
-# PXL Clock Simulator for VS Code
+# PXL Clock for VS Code
 
-Develop, preview and run pixograms for the [PXL Clock](https://www.pxlclock.com) directly in VS Code.
+Develop, preview and publish pixograms for the [PXL Clock](https://www.pxlclock.com) directly in VS Code.
 
 ![Extension Screenshot](media/extension-screenshot.png)
 
@@ -12,12 +12,13 @@ The PXL Clock is a programmable 24x24 RGB pixel display in a handcrafted frame w
 
 ## Features
 
-- **Built-in Simulator** — runs your pixograms locally, no device needed
+- **Built-in Simulator** — the simulator host starts automatically in the background, no manual setup needed
 - **Live Preview** — see your pixel art directly in the VS Code sidebar or as a separate panel
 - **Run & Stop** — launch `.cs` pixogram scripts with one click from the editor toolbar or file tree
-- **File Explorer** — browse clock faces, demos and your own pixograms
+- **File Explorer** — browse your pixograms in a dedicated sidebar tree view
 - **Hot Reload** — edit a running script and see changes instantly
-- **Flat & Clock rendering modes** — switch between flat pixel view and realistic LED look
+- **Publish to Clock** — deploy pixograms directly to your PXL Clock over the network
+- **Simulator Status** — monitor the simulator state and manage connected devices from the sidebar
 
 ## Getting Started
 
@@ -34,23 +35,22 @@ The PXL Clock is a programmable 24x24 RGB pixel display in a handcrafted frame w
 | `PXL Clock: Open Simulator` | Open the simulator as a full editor panel |
 | `PXL Clock: Run Current Script` | Run the active `.cs` file |
 | `PXL Clock: Stop Script` | Stop the running pixogram |
-| `PXL Clock: Restart Script` | Restart the running pixogram |
-| `PXL Clock: Start Simulator` | Manually start the simulator host |
-| `PXL Clock: Stop Simulator` | Stop the simulator host |
+| `PXL Clock: Publish Pixogram` | Publish the active `.cs` file to a PXL Clock |
 | `PXL Clock: Show Log` | Show the output log |
+| `PXL Clock: Get Example Pixograms` | Download demo scripts and clock faces into your workspace |
 
 ## Configuration
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `pxl.simulatorHost` | `http://localhost:5001` | URL of the PXL Simulator Host |
+| `pxl.simulatorHost` | `http://127.0.0.1:5001` | URL of the PXL Simulator Host |
 
 ## Writing Pixograms
 
 Pixograms are C# scripts using the Pxl API. Here's a minimal example:
 
 ```csharp
-#: package Pxl 0.0.56
+#: package Pxl
 
 using Pxl.Ui.CSharp;
 
@@ -65,7 +65,7 @@ For more examples, check out the [pxl-clock repository](https://github.com/Schle
 
 ## Links
 
-- [PXL Clock Website](https://www.pxlclock.com)
+- [PXL Clock Website](https://www.pxlclock.com/?ref=RONALD)
 - [GitHub](https://github.com/SchlenkR/pxl-clock)
 - [Discord Community](https://discord.gg/KDbVdKQh5j)
 - [NuGet Package](https://www.nuget.org/packages/Pxl)

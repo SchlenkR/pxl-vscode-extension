@@ -85,7 +85,7 @@ export class SimulatorPanel {
   ) {
     this.panel = panel;
     this.panel.webview.html = getWebviewHtml(this.panel.webview, extensionUri);
-    this.panel.iconPath = vscode.Uri.joinPath(extensionUri, "media", "icon.png");
+    this.panel.iconPath = vscode.Uri.joinPath(extensionUri, "media", "logo.png");
 
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
 

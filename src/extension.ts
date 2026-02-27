@@ -184,27 +184,32 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }
 
-    // Wait until it responds
-    outputChannel.appendLine("Waiting for Simulator Host to become ready...");
-    const deadline = Date.now() + 30000;
-    while (Date.now() < deadline) {
-      if (await pingSimulator()) {
-        restartCount = 0;
-        statusProvider.refresh();
-        outputChannel.appendLine("Simulator Host is online.");
-        return true;
-      }
-      if (!simulatorProcess) {
-        // Process died — the exit handler will auto-restart it
+    // Wait until it responds — show progress bar in status bar
+    return vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Window, title: "Starting Simulator…" },
+      async () => {
+        outputChannel.appendLine("Waiting for Simulator Host to become ready...");
+        const deadline = Date.now() + 30000;
+        while (Date.now() < deadline) {
+          if (await pingSimulator()) {
+            restartCount = 0;
+            statusProvider.refresh();
+            outputChannel.appendLine("Simulator Host is online.");
+            return true;
+          }
+          if (!simulatorProcess) {
+            // Process died — the exit handler will auto-restart it
+            return false;
+          }
+          await new Promise((r) => setTimeout(r, 500));
+        }
+
+        vscode.window.showErrorMessage(
+          "Simulator Host did not start in time. Check the PXL Clock output log."
+        );
         return false;
       }
-      await new Promise((r) => setTimeout(r, 500));
-    }
-
-    vscode.window.showErrorMessage(
-      "Simulator Host did not start in time. Check the PXL Clock output log."
     );
-    return false;
   }
 
   // Start on activation
@@ -237,6 +242,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (!(await ensureSimulatorRunning())) return;
 
       try {
+        outputChannel.show(true);
         await client.runScript(editor.document.fileName);
         statusProvider.refresh();
       } catch (err) {
@@ -296,6 +302,7 @@ export function activate(context: vscode.ExtensionContext) {
         if (!(await ensureSimulatorRunning())) return;
 
         try {
+          outputChannel.show(true);
           await client.runScript(item.node.uri.fsPath);
           statusProvider.refresh();
         } catch (err) {
@@ -375,6 +382,123 @@ export function activate(context: vscode.ExtensionContext) {
         await doPublish(filePath, address, deviceName);
       }
     )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pxl.initDemos", async () => {
+      const workspaceDir = getWorkspaceDir();
+      if (!workspaceDir) {
+        vscode.window.showErrorMessage("Open a workspace folder first.");
+        return;
+      }
+
+      const input = await vscode.window.showInputBox({
+        prompt: "Folder for example pixograms (relative to workspace root)",
+        value: "apps",
+        validateInput: (value) => {
+          if (!value || !value.trim()) return "Path cannot be empty";
+          const trimmed = value.trim();
+          if (trimmed.includes("..")) return "Path must not contain '..'";
+          if (path.isAbsolute(trimmed)) return "Path must be relative";
+          return undefined;
+        },
+      });
+
+      if (!input) return;
+      const targetDir = path.join(workspaceDir, input.trim());
+
+      // Check target: must be empty or non-existent
+      try {
+        const entries = fs.readdirSync(targetDir);
+        if (entries.length > 0) {
+          vscode.window.showErrorMessage(
+            `Folder "${input.trim()}" is not empty. Choose an empty or new folder.`
+          );
+          return;
+        }
+      } catch {
+        // Does not exist — fine, we'll create it
+      }
+
+      const repoUrl =
+        "https://github.com/SchlenkR/pxl-clock/archive/refs/heads/main.zip";
+
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: "Downloading example pixograms...",
+          cancellable: false,
+        },
+        async () => {
+          const tmpDir = path.join(workspaceDir, ".pxl-tmp-" + Date.now());
+          try {
+            const zipPath = path.join(tmpDir, "repo.zip");
+            fs.mkdirSync(tmpDir, { recursive: true });
+
+            // Download zip
+            await new Promise<void>((resolve, reject) => {
+              const download = (url: string) => {
+                const mod = url.startsWith("https") ? require("https") : require("http");
+                mod.get(url, (res: any) => {
+                  if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                    download(res.headers.location);
+                    return;
+                  }
+                  if (res.statusCode !== 200) {
+                    reject(new Error(`Download failed: HTTP ${res.statusCode}`));
+                    return;
+                  }
+                  const file = fs.createWriteStream(zipPath);
+                  res.pipe(file);
+                  file.on("finish", () => { file.close(); resolve(); });
+                  file.on("error", reject);
+                }).on("error", reject);
+              };
+              download(repoUrl);
+            });
+
+            // Unzip
+            await new Promise<void>((resolve, reject) => {
+              cp.exec(
+                `unzip -q "${zipPath}" -d "${tmpDir}"`,
+                (err) => (err ? reject(err) : resolve())
+              );
+            });
+
+            // Find the extracted apps folder
+            const extractedRoot = path.join(tmpDir, "pxl-clock-main");
+            const appsDir = path.join(extractedRoot, "apps");
+
+            if (!fs.existsSync(appsDir)) {
+              throw new Error("Could not find 'apps' folder in downloaded repository.");
+            }
+
+            // Copy apps/* to target
+            fs.mkdirSync(targetDir, { recursive: true });
+            await new Promise<void>((resolve, reject) => {
+              cp.exec(
+                `cp -R "${appsDir}/"* "${targetDir}/"`,
+                (err) => (err ? reject(err) : resolve())
+              );
+            });
+
+            fileExplorer.refresh();
+            vscode.window.showInformationMessage(
+              `Example pixograms installed to "${input.trim()}/".`
+            );
+          } catch (err) {
+            vscode.window.showErrorMessage(
+              `Failed to download examples: ${err}`
+            );
+          } finally {
+            // Clean up
+            try {
+              fs.rmSync(tmpDir, { recursive: true, force: true });
+            } catch {}
+          }
+        }
+      );
+    })
   );
 
   context.subscriptions.push({

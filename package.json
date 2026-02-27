@@ -2,9 +2,9 @@
   "name": "pxl-clock",
   "displayName": "PXL Clock",
   "description": "Develop and preview pixograms for the PXL Clock directly in VS Code",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "pxlclock",
-  "icon": "media/icon.png",
+  "icon": "media/logo.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/SchlenkR/pxl-vscode-extension"
@@ -24,8 +24,7 @@
     "simulator"
   ],
   "extensionDependencies": [
-    "ms-dotnettools.csharp",
-    "Ionide.Ionide-fsharp"
+    "ms-dotnettools.csharp"
   ],
   "activationEvents": [
     "onWebviewPanel:pxl.simulatorCanvas"
@@ -59,15 +58,6 @@
         "icon": "$(refresh)"
       },
       {
-        "command": "pxl.openFile",
-        "title": "PXL Clock: Open File"
-      },
-      {
-        "command": "pxl.runFromTree",
-        "title": "Run Pixogram",
-        "icon": "$(play)"
-      },
-      {
         "command": "pxl.refreshStatus",
         "title": "PXL Clock: Refresh Status",
         "icon": "$(refresh)"
@@ -91,6 +81,19 @@
         "command": "pxl.publishFromTree",
         "title": "Publish to Clock",
         "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "pxl.initDemos",
+        "title": "PXL Clock: Get Example Pixograms"
+      },
+      {
+        "command": "pxl.openFile",
+        "title": "PXL Clock: Open File"
+      },
+      {
+        "command": "pxl.runFromTree",
+        "title": "Run Pixogram",
+        "icon": "$(play)"
       }
     ],
     "viewsContainers": {
@@ -98,7 +101,7 @@
         {
           "id": "pxl-explorer",
           "title": "PXL Clock",
-          "icon": "media/pxl-icon.svg"
+          "icon": "media/logo_monochrome.svg"
         }
       ]
     },
@@ -179,6 +182,16 @@
           "when": "view == pxlFiles && viewItem == csFile",
           "group": "inline"
         }
+      ],
+      "commandPalette": [
+        { "command": "pxl.openSimulatorToSide", "when": "false" },
+        { "command": "pxl.openFile", "when": "false" },
+        { "command": "pxl.refreshFiles", "when": "false" },
+        { "command": "pxl.refreshStatus", "when": "false" },
+        { "command": "pxl.restartScript", "when": "false" },
+        { "command": "pxl.runFromTree", "when": "false" },
+        { "command": "pxl.publishFromTree", "when": "false" },
+        { "command": "pxl.publishPixogram", "when": "false" }
       ]
     }
   },
@@ -188,6 +201,7 @@
     "build:simulator": "bash build-simulator.sh --current",
     "build:simulator:all": "bash build-simulator.sh",
     "devbuild": "bash build-simulator.sh --current && node esbuild.js --production",
+    "start:vscodeDevInstance": "code --extensionDevelopmentPath=/Users/ronald/repos/github.pxl/pxl-vscode-extension",
     "watch": "node esbuild.js --watch",
     "package": "bash build-simulator.sh --current && npx @vscode/vsce package",
     "package:all": "bash build-simulator.sh && npx @vscode/vsce package",
