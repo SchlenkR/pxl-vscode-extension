@@ -1,7 +1,7 @@
-import * as http from "http";
 import * as signalR from "@microsoft/signalr";
 import * as vscode from "vscode";
 import WebSocket from "ws";
+import { getBaseUrl, httpRequest } from "./shared";
 
 // SignalR's Node.js code path uses a dynamic require("ws") that esbuild can't
 // bundle. By setting the global WebSocket, our esbuild post-process plugin can
@@ -34,12 +34,6 @@ export function createSimulatorClient(
   const frameHandlers = new Set<(frame: Uint8Array) => void>();
   const logHandlers = new Set<(message: string) => void>();
   const scriptsChangedHandlers = new Set<() => void>();
-
-  function getBaseUrl(): string {
-    return vscode.workspace
-      .getConfiguration("pxl")
-      .get<string>("simulatorHost", "http://127.0.0.1:5001");
-  }
 
   function log(message: string) {
     outputChannel.appendLine(message);
@@ -126,47 +120,13 @@ export function createSimulatorClient(
     log("Disconnected from PXL Simulator.");
   }
 
-  function httpPost(path: string, body?: object): Promise<string> {
-    const baseUrl = getBaseUrl();
-    const url = new URL(`${baseUrl}${path}`);
-    const payload = body ? JSON.stringify(body) : undefined;
-
-    return new Promise((resolve, reject) => {
-      const req = http.request(
-        {
-          hostname: url.hostname,
-          port: url.port,
-          path: url.pathname,
-          method: "POST",
-          headers: payload
-            ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) }
-            : undefined,
-        },
-        (res) => {
-          let data = "";
-          res.on("data", (chunk) => (data += chunk));
-          res.on("end", () => {
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-              resolve(data);
-            } else {
-              reject(new Error(`API ${path} failed: ${res.statusCode} ${res.statusMessage}`));
-            }
-          });
-        }
-      );
-      req.on("error", reject);
-      if (payload) req.write(payload);
-      req.end();
-    });
-  }
-
   async function apiPost(path: string, body?: object): Promise<string> {
     const maxRetries = 10;
     const retryDelayMs = 1500;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await httpPost(path, body);
+        return await httpRequest("POST", path, body);
       } catch (err: any) {
         const isConnectionError =
           err?.code === "ECONNREFUSED" ||
@@ -201,7 +161,7 @@ export function createSimulatorClient(
 
   async function publishPixogram(filePath: string, deviceAddress: string): Promise<void> {
     log(`Publishing ${filePath} to ${deviceAddress}...`);
-    await httpPost("/api/publish", { scriptPath: filePath, deviceAddress });
+    await httpRequest("POST", "/api/publish", { scriptPath: filePath, deviceAddress });
   }
 
   function onFrame(handler: (frame: Uint8Array) => void): vscode.Disposable {

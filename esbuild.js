@@ -75,7 +75,7 @@ async function main() {
   const webviewCtx = await esbuild.context({
     entryPoints: [
       "src/webview/simulatorWebview.tsx",
-      "src/webview/configWebview.tsx",
+      "src/webview/statusWebview.tsx",
     ],
     bundle: true,
     format: "iife",

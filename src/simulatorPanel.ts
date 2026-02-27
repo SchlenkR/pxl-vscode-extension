@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { getBaseUrl, getNonce } from "./shared";
 
 /** Generate HTML that loads the bundled React webview */
 function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
@@ -7,9 +8,7 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
     vscode.Uri.joinPath(extensionUri, "dist", "simulatorWebview.js")
   );
 
-  const hostUrl = vscode.workspace
-    .getConfiguration("pxl")
-    .get<string>("simulatorHost", "http://127.0.0.1:5001");
+  const hostUrl = getBaseUrl();
   const wsUrl = hostUrl.replace(/^http/, "ws");
 
   return /* html */ `<!DOCTYPE html>
@@ -160,11 +159,3 @@ function handleWebviewMessage(msg: { command: string; url?: string }) {
   }
 }
 
-function getNonce(): string {
-  let text = "";
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return text;
-}

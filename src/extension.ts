@@ -1,40 +1,17 @@
 import * as vscode from "vscode";
 import * as cp from "child_process";
-import * as http from "http";
 import * as path from "path";
 import * as fs from "fs";
 import { createSimulatorClient } from "./simulatorClient";
 import { SimulatorPanel, SimulatorSidebarProvider } from "./simulatorPanel";
 import { FileExplorerProvider, PxlFileItem } from "./fileExplorerProvider";
-import { SimulatorStatusProvider } from "./simulatorStatusProvider";
-import { ConfigSidebarProvider } from "./configPanel";
-
-function getBaseUrl(): string {
-  return vscode.workspace
-    .getConfiguration("pxl")
-    .get<string>("simulatorHost", "http://127.0.0.1:5001");
-}
+import { StatusSidebarProvider } from "./statusPanel";
+import { httpRequest } from "./shared";
 
 function pingSimulator(): Promise<boolean> {
-  const url = new URL(`${getBaseUrl()}/metadata`);
-  return new Promise((resolve) => {
-    const req = http.request(
-      {
-        hostname: url.hostname,
-        port: url.port,
-        path: url.pathname,
-        method: "GET",
-        timeout: 2000,
-      },
-      (res) => {
-        res.resume();
-        resolve(res.statusCode !== undefined && res.statusCode < 500);
-      }
-    );
-    req.on("error", () => resolve(false));
-    req.on("timeout", () => { req.destroy(); resolve(false); });
-    req.end();
-  });
+  return httpRequest("GET", "/metadata", undefined, 2000)
+    .then(() => true)
+    .catch(() => false);
 }
 
 function getSimulatorBinary(extensionPath: string): string | undefined {
@@ -70,12 +47,15 @@ export function activate(context: vscode.ExtensionContext) {
 
   let simulatorProcess: cp.ChildProcess | undefined;
 
-  // Simulator status view
-  const statusProvider = new SimulatorStatusProvider(getBaseUrl);
-  const statusView = vscode.window.createTreeView("pxlSimulatorStatus", {
-    treeDataProvider: statusProvider,
-  });
-  context.subscriptions.push(statusView);
+  // Combined Simulator status + Device config webview
+  const statusProvider = new StatusSidebarProvider(context.extensionUri);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      StatusSidebarProvider.viewType,
+      statusProvider,
+      { webviewOptions: { retainContextWhenHidden: true } }
+    )
+  );
   statusProvider.start();
 
   // Simulator sidebar webview (Preview in sidebar)
@@ -97,16 +77,6 @@ export function activate(context: vscode.ExtensionContext) {
     showCollapseAll: true,
   });
   context.subscriptions.push(filesView);
-
-  // Device config webview (Devices in sidebar)
-  const configProvider = new ConfigSidebarProvider(context.extensionUri);
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(
-      ConfigSidebarProvider.viewType,
-      configProvider,
-      { webviewOptions: { retainContextWhenHidden: true } }
-    )
-  );
 
   // Update watcher status from log messages
   client.onLog((message) => {
@@ -193,7 +163,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Already responding? Done.
     if (await pingSimulator()) {
       restartCount = 0;
-      configProvider.refresh();
+      statusProvider.refresh();
       if (!simulatorProcess) {
         outputChannel.appendLine(
           "⚠ Simulator Host is already running but was NOT started by this extension. " +
@@ -221,7 +191,6 @@ export function activate(context: vscode.ExtensionContext) {
       if (await pingSimulator()) {
         restartCount = 0;
         statusProvider.refresh();
-        configProvider.refresh();
         outputChannel.appendLine("Simulator Host is online.");
         return true;
       }
@@ -338,17 +307,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   async function loadDevicesFromSimulator(): Promise<Array<{ name: string; address: string }>> {
     try {
-      const baseUrl = getBaseUrl();
-      const url = new URL(`${baseUrl}/api/config`);
-      const data = await new Promise<string>((resolve, reject) => {
-        const req = http.request(
-          { hostname: url.hostname, port: url.port, path: url.pathname, method: "GET", timeout: 3000 },
-          (res) => { let d = ""; res.on("data", (c) => (d += c)); res.on("end", () => resolve(d)); }
-        );
-        req.on("error", reject);
-        req.on("timeout", () => { req.destroy(); reject(new Error("timeout")); });
-        req.end();
-      });
+      const data = await httpRequest("GET", "/api/config", undefined, 3000);
       const config = JSON.parse(data) as { devices: Array<{ name: string; address: string }>; activeDevices: string[] };
       return config.devices;
     } catch {
@@ -356,41 +315,36 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  async function publishPixogram(filePath: string) {
-    if (!(await ensureSimulatorRunning())) return;
-
-    const targets = await loadDevicesFromSimulator();
-
-    if (targets.length === 0) {
-      vscode.window.showWarningMessage(
-        "No devices configured. Open the Devices panel in the PXL Clock sidebar to add devices."
-      );
-      return;
-    }
-
-    let target: { name: string; address: string };
-    if (targets.length === 1) {
-      target = targets[0];
-    } else {
-      const picked = await vscode.window.showQuickPick(
-        targets.map((t) => ({ label: t.name, description: t.address, target: t })),
-        { placeHolder: "Select target PXL Clock" }
-      );
-      if (!picked) return;
-      target = picked.target;
-    }
-
+  async function doPublish(filePath: string, address: string, name: string) {
     await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: `Publishing to ${target.name}...` },
+      { location: vscode.ProgressLocation.Notification, title: `Publishing to ${name}...` },
       async () => {
         try {
-          await client.publishPixogram(filePath, target.address);
-          vscode.window.showInformationMessage(`Published to ${target.name}`);
+          await client.publishPixogram(filePath, address);
+          vscode.window.showInformationMessage(`Published to ${name}`);
         } catch (err) {
           vscode.window.showErrorMessage(`Publish failed: ${err}`);
         }
       }
     );
+  }
+
+  async function publishPixogram(filePath: string) {
+    if (!(await ensureSimulatorRunning())) return;
+
+    const targets = await loadDevicesFromSimulator();
+
+    type PickItem = vscode.QuickPickItem & { target: { name: string; address: string } | null };
+    const items: PickItem[] = targets.length > 0
+      ? targets.map((t) => ({ label: t.name, description: t.address, target: t }))
+      : [{ label: "$(warning) No PXL Clocks configured", description: "Add clocks in the Simulator panel first", target: null }];
+
+    const picked = await vscode.window.showQuickPick(items, {
+      placeHolder: targets.length > 0 ? "Select target PXL Clock" : "No PXL Clocks available",
+    });
+    if (!picked || !picked.target) return;
+
+    await doPublish(filePath, picked.target.address, picked.target.name);
   }
 
   context.subscriptions.push(
@@ -413,6 +367,16 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "pxl.publishToDevice",
+      async (filePath: string, address: string, deviceName: string) => {
+        if (!(await ensureSimulatorRunning())) return;
+        await doPublish(filePath, address, deviceName);
+      }
+    )
+  );
+
   context.subscriptions.push({
     dispose: () => {
       disposed = true;
@@ -420,7 +384,6 @@ export function activate(context: vscode.ExtensionContext) {
       statusProvider.dispose();
       fileExplorer.dispose();
       sidebarProvider.dispose();
-      configProvider.dispose();
       if (simulatorProcess) {
         simulatorProcess.kill("SIGTERM");
       }

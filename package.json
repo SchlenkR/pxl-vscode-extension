@@ -106,6 +106,7 @@
       "pxl-explorer": [
         {
           "id": "pxlSimulatorStatus",
+          "type": "webview",
           "name": "Simulator",
           "icon": "$(server-process)"
         },
@@ -119,12 +120,6 @@
           "id": "pxlFiles",
           "name": "Pixograms",
           "icon": "$(file-code)"
-        },
-        {
-          "id": "pxlDeviceConfig",
-          "type": "webview",
-          "name": "Devices",
-          "icon": "$(broadcast)"
         }
       ]
     },
@@ -183,16 +178,6 @@
           "command": "pxl.publishFromTree",
           "when": "view == pxlFiles && viewItem == csFile",
           "group": "inline"
-        },
-        {
-          "command": "pxl.stopScript",
-          "when": "view == pxlSimulatorStatus && viewItem == watcher",
-          "group": "inline"
-        },
-        {
-          "command": "pxl.restartScript",
-          "when": "view == pxlSimulatorStatus && viewItem == watcher",
-          "group": "inline"
         }
       ]
     }
@@ -202,6 +187,7 @@
     "build": "node esbuild.js --production",
     "build:simulator": "bash build-simulator.sh --current",
     "build:simulator:all": "bash build-simulator.sh",
+    "devbuild": "bash build-simulator.sh --current && node esbuild.js --production",
     "watch": "node esbuild.js --watch",
     "package": "bash build-simulator.sh --current && npx @vscode/vsce package",
     "package:all": "bash build-simulator.sh && npx @vscode/vsce package",

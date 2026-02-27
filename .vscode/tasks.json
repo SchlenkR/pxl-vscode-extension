@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "PXL-EXT :: DevBuild (Simulator UI → Simulator Host Binary → Extension Bundle)",
+      "type": "npm",
+      "script": "devbuild",
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "PXL-EXT :: Build Extension (esbuild)",
+      "type": "npm",
+      "script": "build",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "PXL-EXT :: Build Simulator (binaries)",
+      "type": "npm",
+      "script": "build:simulator",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "PXL-EXT :: Watch (esbuild watch mode)",
+      "type": "npm",
+      "script": "watch",
+      "isBackground": true,
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "PXL-EXT :: Create VSIX Symlink",
+      "type": "shell",
+      "command": "rm -rf ~/.vscode/extensions/pxlclock.pxl-simulator-0.1.0 && ln -s ${workspaceFolder} ~/.vscode/extensions/pxlclock.pxl-simulator-0.1.0 && echo 'Symlink created: ~/.vscode/extensions/pxlclock.pxl-simulator-0.1.0 → ${workspaceFolder}'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}
