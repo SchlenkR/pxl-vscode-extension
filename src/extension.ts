@@ -194,6 +194,13 @@ export function activate(context: vscode.ExtensionContext) {
     if (await pingSimulator()) {
       restartCount = 0;
       configProvider.refresh();
+      if (!simulatorProcess) {
+        outputChannel.appendLine(
+          "⚠ Simulator Host is already running but was NOT started by this extension. " +
+          "Script run/stop may fail if it was started without --clock-repo."
+        );
+        outputChannel.show(true);
+      }
       return true;
     }
 
