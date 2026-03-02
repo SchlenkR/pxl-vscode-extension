@@ -2,13 +2,13 @@
 
 Develop, preview and publish pixograms for the [PXL Clock](https://www.pxlclock.com) directly in VS Code.
 
-![Extension Screenshot](media/extension-screenshot.png)
+![Extension Screenshot](https://raw.githubusercontent.com/SchlenkR/pxl-vscode-extension/main/media/extension-screenshot.png)
 
 ## What is the PXL Clock?
 
 The PXL Clock is a programmable 24x24 RGB pixel display in a handcrafted frame with real glass. What makes it unique: you program it in **C#** using the [Pxl NuGet package](https://www.nuget.org/packages/Pxl).
 
-![PXL Clock](media/pxl-clock-product.jpg)
+![PXL Clock](https://raw.githubusercontent.com/SchlenkR/pxl-vscode-extension/main/media/pxl-clock-product.jpg)
 
 ## Features
 

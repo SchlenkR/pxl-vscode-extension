@@ -201,7 +201,7 @@
     "build:simulator": "bash build-simulator.sh --current",
     "build:simulator:all": "bash build-simulator.sh",
     "devbuild": "bash build-simulator.sh --current && node esbuild.js --production",
-    "start:vscodeDevInstance": "code --extensionDevelopmentPath=/Users/ronald/repos/github.pxl/pxl-vscode-extension",
+    "start:vscodeDevInstance": "code --extensionDevelopmentPath=${PWD}",
     "watch": "node esbuild.js --watch",
     "package": "bash build-simulator.sh --current && npx @vscode/vsce package",
     "package:all": "bash build-simulator.sh && npx @vscode/vsce package",
