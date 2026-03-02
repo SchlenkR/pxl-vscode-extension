@@ -2,7 +2,7 @@
   "name": "pxl-clock",
   "displayName": "PXL Clock",
   "description": "Develop and preview pixograms for the PXL Clock directly in VS Code",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "pxlclock",
   "icon": "media/logo.png",
   "repository": {
