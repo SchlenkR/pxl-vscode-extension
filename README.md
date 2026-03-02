@@ -23,10 +23,11 @@ The PXL Clock is a programmable 24x24 RGB pixel display in a handcrafted frame w
 ## Getting Started
 
 1. Install the extension
-2. Open a folder containing `.cs` pixogram files (e.g. clone [pxl-clock](https://github.com/SchlenkR/pxl-clock))
-3. The simulator starts automatically in the background
-4. Click a `.cs` file in the **Pixograms** panel and hit the play button
-5. Watch the preview in the **Preview** sidebar panel, or open a full-size simulator with `PXL Clock: Open Simulator`
+2. Create a new folder for your pixograms and open it in VS Code
+3. Run the command `PXL Clock: Get Example Pixograms` to download demo scripts and clock faces into your workspace
+4. The simulator starts automatically in the background
+5. Click a `.cs` file in the **Pixograms** panel and hit the play button
+6. Watch the preview in the **Preview** sidebar panel, or open a full-size simulator with `PXL Clock: Open Simulator`
 
 ## Commands
 
