@@ -45,7 +45,7 @@
       }
     },
     {
-      "label": "PXL-EXT :: Publish Extension",
+      "label": "PXL-EXT :: Publish vscode Extension",
       "type": "npm",
       "script": "publish",
       "group": "build",
