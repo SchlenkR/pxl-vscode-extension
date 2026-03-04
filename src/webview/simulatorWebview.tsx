@@ -7,7 +7,8 @@ import type { LedMatrixConfig } from "pxl-device-view";
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
 const vscodeApi = acquireVsCodeApi();
 
-const BASE_URL = "http://127.0.0.1:5001";
+// Injected by the extension host via a <meta> tag in the webview HTML
+const BASE_URL = document.querySelector<HTMLMetaElement>('meta[name="pxl-base-url"]')!.content;
 
 function App() {
   const [mode, setMode] = useState<VisualConfigName>("clock");

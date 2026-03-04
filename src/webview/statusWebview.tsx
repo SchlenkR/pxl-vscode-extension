@@ -26,7 +26,7 @@ const Icon = {
 };
 
 function App() {
-  const [status, setStatus] = useState<Status>({ hostOnline: false, watcherRunning: false, watcherFile: "", port: "5001" });
+  const [status, setStatus] = useState<Status>({ hostOnline: false, watcherRunning: false, watcherFile: "", port: "…" });
   const [config, setConfig] = useState<PxlConfig | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanResults, setScanResults] = useState<DiscoveredClock[] | null>(null);

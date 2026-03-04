@@ -1,10 +1,56 @@
 import * as vscode from "vscode";
 import * as http from "http";
+import * as net from "net";
+
+// Set once when the extension spawns the simulator on a free port.
+// Before it's set, callers must handle the empty string gracefully.
+let baseUrl = "";
+
+export function setBaseUrl(url: string): void {
+  baseUrl = url;
+}
 
 export function getBaseUrl(): string {
-  return vscode.workspace
-    .getConfiguration("pxl")
-    .get<string>("simulatorHost", "http://127.0.0.1:5001");
+  return baseUrl;
+}
+
+function getPortRange(): { start: number; end: number } {
+  const raw = vscode.workspace.getConfiguration("pxl").get<string>("simulatorPortRange", "5010-5099");
+  const match = raw.match(/^(\d+)-(\d+)$/);
+  if (match) return { start: parseInt(match[1]), end: parseInt(match[2]) };
+  return { start: 5010, end: 5099 };
+}
+
+export function findFreePort(): Promise<number> {
+  const { start, end } = getPortRange();
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    // Try a random port in range to reduce collision likelihood
+    const port = start + Math.floor(Math.random() * (end - start + 1));
+    server.listen(port, "127.0.0.1", () => {
+      server.close(() => resolve(port));
+    });
+    server.on("error", () => {
+      // Port taken — scan sequentially
+      tryNextPort(start, end, start, resolve, reject);
+    });
+  });
+}
+
+function tryNextPort(port: number, end: number, rangeStart: number, resolve: (port: number) => void, reject: (err: Error) => void): void {
+  if (port > end) {
+    reject(new Error(`No free port found in range ${rangeStart}-${end}`));
+    return;
+  }
+  const server = net.createServer();
+  server.unref();
+  server.listen(port, "127.0.0.1", () => {
+    server.close(() => resolve(port));
+  });
+  server.on("error", () => {
+    tryNextPort(port + 1, end, rangeStart, resolve, reject);
+  });
 }
 
 export function getNonce(): string {

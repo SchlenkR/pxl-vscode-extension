@@ -2,7 +2,7 @@
   "name": "pxl-clock",
   "displayName": "PXL Clock",
   "description": "Develop and preview pixograms for the PXL Clock directly in VS Code",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "publisher": "pxlclock",
   "icon": "media/logo.png",
   "homepage": "https://www.pxlclock.com/?ref=RONALD",
@@ -130,10 +130,10 @@
     "configuration": {
       "title": "PXL Clock",
       "properties": {
-        "pxl.simulatorHost": {
+        "pxl.simulatorPortRange": {
           "type": "string",
-          "default": "http://127.0.0.1:5001",
-          "description": "URL of the PXL Simulator Host"
+          "default": "5010-5099",
+          "description": "Port range for the PXL Simulator Host (e.g. 5010-5099). A free port is chosen automatically from this range."
         }
       }
     },

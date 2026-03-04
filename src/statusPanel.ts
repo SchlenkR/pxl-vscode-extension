@@ -61,9 +61,10 @@ export class StatusSidebarProvider implements vscode.WebviewViewProvider {
 
   private pushStatus(): void {
     if (!this.view) return;
+    const baseUrl = getBaseUrl();
     const port = (() => {
-      try { return new URL(getBaseUrl()).port || "80"; }
-      catch { return "5001"; }
+      try { return new URL(baseUrl).port || "—"; }
+      catch { return "—"; }
     })();
     this.view.webview.postMessage({
       type: "status",

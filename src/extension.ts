@@ -6,7 +6,7 @@ import { createSimulatorClient } from "./simulatorClient";
 import { SimulatorPanel, SimulatorSidebarProvider } from "./simulatorPanel";
 import { FileExplorerProvider, PxlFileItem } from "./fileExplorerProvider";
 import { StatusSidebarProvider } from "./statusPanel";
-import { httpRequest } from "./shared";
+import { httpRequest, findFreePort, setBaseUrl } from "./shared";
 
 function pingSimulator(): Promise<boolean> {
   return httpRequest("GET", "/metadata", undefined, 2000)
@@ -103,18 +103,19 @@ export function activate(context: vscode.ExtensionContext) {
 
   let disposed = false;
   let restartCount = 0;
+  let chosenPort: number | undefined;
 
-  function spawnSimulatorProcess(): boolean {
+  function spawnSimulatorProcess(port: number): boolean {
     const binary = getSimulatorBinary(context.extensionPath);
     if (!binary) return false;
 
     const workspaceDir = getWorkspaceDir();
-    const args: string[] = [];
+    const args: string[] = ["--port", String(port)];
     if (workspaceDir) {
       args.push("--clock-repo", workspaceDir);
     }
 
-    outputChannel.appendLine(`Starting Simulator Host: ${binary}`);
+    outputChannel.appendLine(`Starting Simulator Host: ${binary} (port ${port})`);
 
     const proc = cp.spawn(binary, args, {
       stdio: ["ignore", "pipe", "pipe"],
@@ -160,23 +161,28 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   async function ensureSimulatorRunning(): Promise<boolean> {
+    // Pick a port once (reused across restarts)
+    if (!chosenPort) {
+      try {
+        chosenPort = await findFreePort();
+      } catch (err) {
+        vscode.window.showErrorMessage(`Could not find a free port for the Simulator: ${err}`);
+        return false;
+      }
+      setBaseUrl(`http://127.0.0.1:${chosenPort}`);
+      outputChannel.appendLine(`Using port ${chosenPort} for Simulator Host.`);
+    }
+
     // Already responding? Done.
     if (await pingSimulator()) {
       restartCount = 0;
       statusProvider.refresh();
-      if (!simulatorProcess) {
-        outputChannel.appendLine(
-          "⚠ Simulator Host is already running but was NOT started by this extension. " +
-          "Script run/stop may fail if it was started without --clock-repo."
-        );
-        outputChannel.show(true);
-      }
       return true;
     }
 
     // Start process (no-op if already spawned)
     if (!simulatorProcess) {
-      if (!spawnSimulatorProcess()) {
+      if (!spawnSimulatorProcess(chosenPort)) {
         vscode.window.showErrorMessage(
           "Simulator Host binary not found. Run build-simulator.sh to build it."
         );
