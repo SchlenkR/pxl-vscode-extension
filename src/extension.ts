@@ -482,6 +482,23 @@ export function activate(context: vscode.ExtensionContext) {
               );
             });
 
+            // Copy API documentation (llms.txt, docs/) to workspace root
+            const llmsTxt = path.join(extractedRoot, "llms.txt");
+            if (fs.existsSync(llmsTxt)) {
+              fs.copyFileSync(llmsTxt, path.join(workspaceDir, "llms.txt"));
+            }
+            const docsDir = path.join(extractedRoot, "docs");
+            if (fs.existsSync(docsDir)) {
+              const targetDocsDir = path.join(workspaceDir, "docs");
+              fs.mkdirSync(targetDocsDir, { recursive: true });
+              await new Promise<void>((resolve, reject) => {
+                cp.exec(
+                  `cp -R "${docsDir}/"* "${targetDocsDir}/"`,
+                  (err) => (err ? reject(err) : resolve())
+                );
+              });
+            }
+
             fileExplorer.refresh();
             vscode.window.showInformationMessage(
               `Example pixograms installed to "${input.trim()}/".`
