@@ -15,7 +15,7 @@ var count = 0;
 
 // We always need to return a DrawingContext delegate that contains our drawing code.
 // This is what gets called every frame to render the pixogram.
-// The name "scene" is just a convention, you can name it whatever you like.
+// There always has to be exactly one 'scene' delegate with this signature.
 var scene = (DrawingContext ctx) =>
 {
     // Drawing code here — runs every frame
