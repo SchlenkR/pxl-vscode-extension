@@ -524,6 +524,82 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pxl.newPixogram", async (item: PxlFileItem) => {
+      const folderUri = item?.node?.uri;
+      if (!folderUri) return;
+
+      const name = await vscode.window.showInputBox({
+        prompt: "Name for the new pixogram",
+        value: "MyPixogram",
+        validateInput: (v) => {
+          if (!v.trim()) return "Name cannot be empty";
+          if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(v.trim())) return "Use letters, digits, hyphens, underscores";
+          return undefined;
+        },
+      });
+      if (!name) return;
+
+      const templatePath = vscode.Uri.joinPath(context.extensionUri, "media", "templates", "new-pixogram.cs").fsPath;
+      let content: string;
+      try {
+        content = fs.readFileSync(templatePath, "utf8");
+      } catch {
+        vscode.window.showErrorMessage("Pixogram template not found. Rebuild the extension.");
+        return;
+      }
+
+      const trimmed = name.trim();
+      content = content.replace(/MyPixogramName/g, trimmed);
+      content = content.replace(/Human Readable Name/g, trimmed);
+
+      const fileName = trimmed + ".cs";
+      const fileUri = vscode.Uri.joinPath(folderUri, fileName);
+      if (fs.existsSync(fileUri.fsPath)) {
+        vscode.window.showErrorMessage(`File "${fileName}" already exists.`);
+        return;
+      }
+
+      fs.writeFileSync(fileUri.fsPath, content, "utf8");
+      const doc = await vscode.workspace.openTextDocument(fileUri);
+      await vscode.window.showTextDocument(doc);
+      fileExplorer.refresh();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pxl.newFolder", async (item: PxlFileItem) => {
+      const folderUri = item?.node?.uri;
+      if (!folderUri) return;
+
+      const name = await vscode.window.showInputBox({
+        prompt: "Folder name",
+        validateInput: (v) => {
+          if (!v.trim()) return "Name cannot be empty";
+          if (v.includes("/") || v.includes("\\") || v.includes("..")) return "Invalid folder name";
+          return undefined;
+        },
+      });
+      if (!name) return;
+
+      const newDir = vscode.Uri.joinPath(folderUri, name.trim());
+      try {
+        fs.mkdirSync(newDir.fsPath);
+        fileExplorer.refresh();
+      } catch (err) {
+        vscode.window.showErrorMessage(`Failed to create folder: ${err}`);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pxl.revealInExplorer", (item: PxlFileItem) => {
+      if (item?.node?.uri) {
+        vscode.commands.executeCommand("revealInExplorer", item.node.uri);
+      }
+    })
+  );
+
   context.subscriptions.push({
     dispose: () => {
       disposed = true;

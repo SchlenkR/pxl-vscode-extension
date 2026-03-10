@@ -161,7 +161,7 @@ export function createSimulatorClient(
 
   async function publishPixogram(filePath: string, deviceAddress: string): Promise<void> {
     log(`Publishing ${filePath} to ${deviceAddress}...`);
-    await httpRequest("POST", "/api/publish", { scriptPath: filePath, deviceAddress });
+    await httpRequest("POST", "/api/publish", { scriptPath: filePath, deviceAddress }, 60_000);
   }
 
   function onFrame(handler: (frame: Uint8Array) => void): vscode.Disposable {

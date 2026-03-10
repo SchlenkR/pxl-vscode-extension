@@ -2,7 +2,7 @@
   "name": "pxl-clock",
   "displayName": "PXL Clock",
   "description": "Develop and preview pixograms for the PXL Clock directly in VS Code",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "publisher": "pxlclock",
   "icon": "media/logo.png",
   "homepage": "https://www.pxlclock.com/?ref=RONALD",
@@ -95,6 +95,21 @@
         "command": "pxl.runFromTree",
         "title": "Run Pixogram",
         "icon": "$(play)"
+      },
+      {
+        "command": "pxl.newPixogram",
+        "title": "New Pixogram",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "pxl.newFolder",
+        "title": "New Folder",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "pxl.revealInExplorer",
+        "title": "Reveal in Explorer View",
+        "icon": "$(folder-opened)"
       }
     ],
     "viewsContainers": {
@@ -182,6 +197,31 @@
           "command": "pxl.publishFromTree",
           "when": "view == pxlFiles && viewItem == csFile",
           "group": "inline"
+        },
+        {
+          "command": "pxl.newPixogram",
+          "when": "view == pxlFiles && viewItem == directory",
+          "group": "1_new@1"
+        },
+        {
+          "command": "pxl.newFolder",
+          "when": "view == pxlFiles && viewItem == directory",
+          "group": "1_new@2"
+        },
+        {
+          "command": "pxl.runFromTree",
+          "when": "view == pxlFiles && viewItem == csFile",
+          "group": "2_actions@1"
+        },
+        {
+          "command": "pxl.publishFromTree",
+          "when": "view == pxlFiles && viewItem == csFile",
+          "group": "2_actions@2"
+        },
+        {
+          "command": "pxl.revealInExplorer",
+          "when": "view == pxlFiles",
+          "group": "navigation"
         }
       ],
       "commandPalette": [
@@ -192,7 +232,10 @@
         { "command": "pxl.restartScript", "when": "false" },
         { "command": "pxl.runFromTree", "when": "false" },
         { "command": "pxl.publishFromTree", "when": "false" },
-        { "command": "pxl.publishPixogram", "when": "false" }
+        { "command": "pxl.publishPixogram", "when": "false" },
+        { "command": "pxl.newPixogram", "when": "false" },
+        { "command": "pxl.newFolder", "when": "false" },
+        { "command": "pxl.revealInExplorer", "when": "false" }
       ]
     }
   },

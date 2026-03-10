@@ -6,6 +6,17 @@ const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
 
 async function main() {
+  // Copy pixogram template from pxl-clock repo
+  const templateSrc = path.join(__dirname, "../pxl-clock/apps/demos/00-empty.cs");
+  const templateDest = path.join(__dirname, "media/templates/new-pixogram.cs");
+  if (fs.existsSync(templateSrc)) {
+    fs.mkdirSync(path.dirname(templateDest), { recursive: true });
+    fs.copyFileSync(templateSrc, templateDest);
+    console.log("[esbuild] Copied pixogram template from pxl-clock");
+  } else {
+    console.warn("[esbuild] Warning: pxl-clock template not found at", templateSrc);
+  }
+
   const ctx = await esbuild.context({
     entryPoints: ["src/extension.ts"],
     bundle: true,
