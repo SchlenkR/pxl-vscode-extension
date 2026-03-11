@@ -251,6 +251,7 @@ export function activate(context: vscode.ExtensionContext) {
         outputChannel.show(true);
         await client.runScript(editor.document.fileName);
         statusProvider.refresh();
+        vscode.commands.executeCommand("pxlSimulatorView.focus");
       } catch (err) {
         vscode.window.showErrorMessage(`Failed to run script: ${err}`);
       }
@@ -311,6 +312,7 @@ export function activate(context: vscode.ExtensionContext) {
           outputChannel.show(true);
           await client.runScript(item.node.uri.fsPath);
           statusProvider.refresh();
+          vscode.commands.executeCommand("pxlSimulatorView.focus");
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to run script: ${err}`);
         }
