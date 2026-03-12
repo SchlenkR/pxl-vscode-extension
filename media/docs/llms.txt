@@ -192,6 +192,7 @@ var scene = (DrawingContext ctx) =>   // MUST be named 'scene'
 - YAML frontmatter is required with `app`, `displayName`, and `author` fields
 - App name must be alphanumeric only: `MyClockFace123` is fine, `my-clock` is not
 - Only single `.cs` script files are supported — no multi-file projects or `#:project` directives
+- The only allowed dependency is `#:package Pxl` (with optional `@version`) — no other package references, project references, or external dependencies are supported (PXL1103)
 
 ### What IS Available
 
