@@ -1,0 +1,650 @@
+# PXL Clock — Pixogram Development Guide
+
+> Everything you need to create pixograms (animated pixel art programs) for the PXL Clock, a 24x24 RGB-LED pixel display. Useful for humans and LLMs alike.
+
+## Overview
+
+A **pixogram** is a C# script that renders animated graphics on a 24x24 pixel display. It uses the `Pxl.Ui.CSharp` API, which provides drawing primitives, text, images, animations, and direct pixel access.
+
+- **Display size**: 24x24 pixels (576 total)
+- **Coordinate system**: (0,0) = top-left, X = right, Y = down
+- **Language**: C# (.NET)
+- **Drawing order**: Later draws appear on top (painter's algorithm)
+- **Anti-aliasing**: Disabled by default (pixel art aesthetics), per-method opt-in
+
+## Quick Start
+
+```csharp
+// ---
+// app: MyPixogramName
+// displayName: Human Readable Name
+// appType: ClockFace
+// author: Your Name
+// description: Brief description of what this pixogram does
+// ---
+
+#:package Pxl@0.0.58
+
+using Pxl.Ui.CSharp;
+
+// State variables go here (persist between frames)
+
+var scene = (DrawingContext ctx) =>
+{
+    ctx.DrawBackground(Colors.Black);
+    // Drawing code here — runs every frame
+};
+```
+
+### Key Concepts
+
+- The `scene` lambda is called every frame (~40 FPS)
+- Variables declared **outside** the scene persist between frames (state)
+- Variables declared **inside** the scene are reset each frame
+- `ctx.Now` gives the current `DateTime` (useful for clock faces)
+- `ctx.Elapsed` gives `TimeSpan` since scene start
+- `ctx.Width` and `ctx.Height` are always 24.0
+
+## Important Tips
+
+1. **Always clear the background** — pixels from previous frames persist otherwise
+2. **Use small fonts** — Var3x5, Mono3x5, Var4x5, Mono4x5 work best for the 24x24 display
+3. **State outside, drawing inside** — declare animation objects and state variables outside the scene
+4. **Animate.Eval() is cached** — safe to call multiple times per frame
+5. **Image paths are relative** to the script file — place assets in an `assets/` subfolder
+6. **Colors implicitly convert to Paint** — pass colors directly where `Paint` is expected
+7. **`#:package Pxl@<version>`** — use this directive to reference the PXL NuGet package. Use the latest version from https://www.nuget.org/packages/Pxl — or check existing `.cs` files in the project for the current version number
+8. **Metadata header** — use `// ---` blocks for app name, type, author, description
+9. **appType values**: `ClockFace` (shows time) or `Scene` (decorative animation)
+10. **Performance** — prefer `SetPixel`/`GetPixel` for per-pixel work over drawing shapes for each pixel
+11. **Examples** — many working pixograms are available at https://github.com/SchlenkR/pxl-clock (see `apps/demos/` and `apps/clockFaces/`). Study them for patterns and inspiration
+
+## Complete Examples
+
+### Clock Face
+
+```csharp
+// ---
+// app: SimpleClock
+// displayName: Simple Clock
+// appType: ClockFace
+// author: Example
+// description: Minimal digital clock
+// ---
+
+#:package Pxl@0.0.58
+
+using Pxl.Ui.CSharp;
+
+var scene = (DrawingContext ctx) =>
+{
+    ctx.DrawBackground(Colors.Black);
+    var now = ctx.Now;
+
+    // Time display
+    ctx.DrawTextMono4x5(now.ToString("HH:mm"), 2, 4, Colors.White);
+    ctx.DrawTextMono3x5(now.ToString("ss"), 9, 12, Colors.Gray);
+
+    // Blinking separator
+    if (now.Millisecond < 500)
+        ctx.DrawPoint(12, 19, Colors.White);
+};
+```
+
+### Bouncing Ball
+
+```csharp
+// ---
+// app: BouncingBall
+// displayName: Bouncing Ball
+// appType: Scene
+// author: Example
+// ---
+
+#:package Pxl@0.0.58
+
+using Pxl.Ui.CSharp;
+
+var xAnim = Animate.EaseInOut(2.0, 2, 20, repeat: Repeat.PingPong);
+var yAnim = Animate.EaseInOut(1.5, 2, 20, repeat: Repeat.PingPong);
+var colorToggle = Animate.ToggleValues(0.5, Colors.Red, Colors.Cyan, Colors.Yellow);
+
+var scene = (DrawingContext ctx) =>
+{
+    ctx.DrawBackground(Colors.Black);
+    var x = xAnim.Eval(ctx);
+    var y = yAnim.Eval(ctx);
+    ctx.DrawCircle(x, y, 3, colorFill: colorToggle.Eval(ctx));
+};
+```
+
+### Rainbow Gradient Background
+
+```csharp
+// ---
+// app: RainbowGradient
+// displayName: Rainbow Gradient
+// appType: Scene
+// author: Example
+// ---
+
+#:package Pxl@0.0.58
+
+using Pxl.Ui.CSharp;
+
+var scene = (DrawingContext ctx) =>
+{
+    // HSL rainbow cycling over time
+    for (int x = 0; x < 24; x++)
+    {
+        for (int y = 0; y < 24; y++)
+        {
+            double hue = (x / 24.0 + ctx.Elapsed.TotalSeconds * 0.1) % 1.0;
+            ctx.SetPixel(x, y, Color.FromHsl(hue, 1.0, 0.5));
+        }
+    }
+};
+```
+
+## Sandbox Constraints (For Nerds)
+
+Pixograms are compiled and executed in a **strict sandbox**. They are pure render functions: given a `DrawingContext`, they produce pixels and return. No side effects, no system access. This section documents exactly what is and isn't allowed.
+
+### How Compilation Works
+
+When you hit "Run" in VS Code or publish to a PXL Clock:
+
+1. Your `.cs` file is parsed. The `// ---` YAML frontmatter is extracted for metadata.
+2. `#:package` directives are stripped (they're for the package manager, not C#).
+3. Your code is wrapped in a static class with a `Scene` property pointing to your `scene` lambda.
+4. Roslyn compiles the result into a DLL with embedded assets.
+5. **21 constraint rules** are enforced — violations are reported as `PXL1xxx` errors.
+
+Your code runs **inside the daemon process** on the PXL Clock device. The constraints exist to keep the device stable and safe.
+
+### Required Structure
+
+```csharp
+// ---
+// app: MyAppName          <- REQUIRED, alphanumeric only (no hyphens/underscores)
+// displayName: My App     <- REQUIRED, shown in the UI
+// author: Your Name       <- REQUIRED
+// description: ...        <- optional
+// appType: ClockFace      <- optional: ClockFace (default), Scene, or Debug
+// duration: 15.0          <- optional: default display duration in seconds
+// ---
+
+#:package Pxl@0.0.58
+
+using Pxl.Ui.CSharp;
+
+// State variables here (persist between frames)
+
+var scene = (DrawingContext ctx) =>   // MUST be named 'scene'
+{
+    ctx.DrawBackground(Colors.Black);
+    // Drawing code here — runs every frame (~40 FPS)
+};
+```
+
+**Structural rules:**
+- The drawing lambda **must** be named `scene` (not `myScene`, not `render` — exactly `scene`)
+- YAML frontmatter is required with `app`, `displayName`, and `author` fields
+- App name must be alphanumeric only: `MyClockFace123` is fine, `my-clock` is not
+- Only single `.cs` script files are supported — no multi-file projects or `#:project` directives
+
+### What IS Available
+
+- `System`, `System.Collections.Generic`, `System.Linq` — auto-imported
+- `Pxl.Ui.CSharp` — the full drawing API (DrawingContext, Colors, Paints, Animate, Image, Fonts, ...)
+- Standard C# language features: classes, records, structs, generics, pattern matching, LINQ, lambdas, tuples, etc.
+- `Math`, `Random`, `string`, `List<T>`, `Dictionary<K,V>`, arrays, etc.
+- `DateTime`, `TimeSpan` (via `ctx.Now` and `ctx.Elapsed`)
+
+### Forbidden Language Features
+
+| Code | Feature | Why |
+|------|---------|-----|
+| PXL1001 | `async` / `await` | Pixograms are synchronous render functions |
+| PXL1002 | `unsafe`, pointer types, `stackalloc` | Managed sandbox only |
+| PXL1003 | `extern` (P/Invoke) | No native code calls |
+| PXL1004 | Destructors / finalizers (`~Foo()`) | Runs on GC thread, prevents assembly unloading |
+| PXL1020 | `event` declarations, `+=`/`-=` on events | Events outlive the pixogram |
+
+### Forbidden Types & APIs
+
+| Code | Category | Forbidden Types |
+|------|----------|----------------|
+| PXL1005 | Dynamic typing | `dynamic` |
+| PXL1006 | Tasks | `Task`, `ValueTask`, `TaskCompletionSource` |
+| PXL1007 | Threading | `Thread`, `ThreadPool`, `Timer`, `Mutex`, `Semaphore`, `Monitor`, `Interlocked`, `CancellationToken`, `Parallel`, ... |
+| PXL1008 | Reflection | `Assembly`, `MethodInfo`, `Activator`, `GetMethod`, `DynamicInvoke`, ... |
+| PXL1009 | File I/O | `File`, `Directory`, `FileStream`, `StreamReader`, `StreamWriter`, ... |
+| PXL1010 | Networking | `HttpClient`, `Socket`, `TcpClient`, `WebClient`, `Dns`, ... |
+| PXL1011 | Processes | `Process`, `ProcessStartInfo` |
+| PXL1012 | Environment | `Environment` (env vars, `Exit()`) |
+| PXL1013 | Native interop | `Marshal`, `DllImport`, `GCHandle`, `NativeMemory` |
+| PXL1014 | Code generation | `ILGenerator`, `DynamicMethod`, `AssemblyBuilder`, `CSharpCompilation` |
+| PXL1015 | Assembly loading | `AssemblyLoadContext`, `LoadFromAssemblyPath` |
+| PXL1016 | Debugger | `Debugger` |
+| PXL1017 | Console | `Console` |
+| PXL1018 | GC | `GC` |
+| PXL1019 | Parallel LINQ | `AsParallel`, `ParallelEnumerable` |
+
+### Forbidden Namespace Imports (PXL1021)
+
+These `using` directives are blocked:
+
+- `System.IO`, `System.Net`, `System.Threading`, `System.Reflection`
+- `System.Runtime.InteropServices`, `System.Runtime.Loader`
+- `System.Diagnostics`, `System.CodeDom`, `System.Linq.Expressions`
+- `Microsoft.CodeAnalysis`
+
+### Asset Constraints
+
+- `Image.LoadSingleImage("assets/logo.png")` and `Image.LoadAnimatedGif("assets/anim.gif")` are the only ways to load files
+- The path argument **must be a string literal** — no variables, no interpolation, no concatenation
+- Assets are embedded into the compiled DLL at compile time
+- Paths are relative to the script file location
+
+### IDE Support (Roslyn Analyzer)
+
+The `Pxl` NuGet package includes a built-in Roslyn analyzer (`Pxl.Analyzers`) that reports constraint violations **live in your IDE** as you type. If you use VS Code with the C# Dev Kit, you'll see red squiggles for forbidden APIs, missing frontmatter, and wrong scene naming — before you even try to run.
+
+---
+
+## API Reference
+
+The sections below document the full `Pxl.Ui.CSharp` drawing API. For exact signatures and XML doc comments, see `docs/Pxl.Ui.CSharp.xml` and `docs/Pxl.Ui.xml`.
+
+### DrawingContext (ctx)
+
+The main entry point for all rendering. Passed as the scene parameter.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Width` | double | Canvas width (24.0) |
+| `Height` | double | Canvas height (24.0) |
+| `Now` | DateTime | Current local date/time |
+| `CycleNo` | long | Current frame number |
+| `Elapsed` | TimeSpan | Time since scene start |
+| `Fps` | int | Frames per second |
+| `Pixels` | PixelsAccess | Direct pixel read/write access |
+
+### Drawing Methods
+
+All drawing methods are extension methods on `DrawingContext`.
+
+#### Background
+
+```csharp
+ctx.DrawBackground(Paint color, bool isAntialias = true)
+```
+
+Fills the entire canvas.
+
+#### Rectangle
+
+```csharp
+// By position + size
+ctx.DrawRectXyWh(
+    double x, double y, double width, double height,
+    Paint? colorFill = null, Paint? colorStroke = null,
+    double strokeWidth = 1, bool isAntialias = true)
+
+// By two corners
+ctx.DrawRectXyXy(
+    double x1, double y1, double x2, double y2,
+    Paint? colorFill = null, Paint? colorStroke = null,
+    double strokeWidth = 1, bool isAntialias = true)
+```
+
+#### Circle
+
+```csharp
+ctx.DrawCircle(
+    double centerX, double centerY, double radius,
+    Paint? colorFill = null, Paint? colorStroke = null,
+    double strokeWidth = 1, bool isAntialias = true)
+```
+
+If neither `colorFill` nor `colorStroke` is specified, defaults to `Colors.Lime` fill.
+
+#### Line
+
+```csharp
+ctx.DrawLine(
+    double x1, double y1, double x2, double y2,
+    Paint? color = null, double strokeWidth = 1, bool isAntialias = true)
+```
+
+Defaults to `Colors.Lime` if color is null.
+
+#### Point (single pixel)
+
+```csharp
+ctx.DrawPoint(
+    double x, double y,
+    Paint? color = null, double strokeWidth = 1, bool isAntialias = true)
+```
+
+Defaults to `Colors.Lime` if color is null.
+
+#### Arc (pie slice)
+
+```csharp
+// By bounding rectangle
+ctx.DrawArc(
+    double x, double y, double width, double height,
+    double startAngle, double sweepAngle,
+    Paint? colorFill = null, Paint? colorStroke = null,
+    double strokeWidth = 1, bool isAntialias = true)
+
+// By center point
+ctx.DrawArcCenter(
+    double centerX, double centerY, double radius,
+    double startAngle, double sweepAngle,
+    Paint? colorFill = null, Paint? colorStroke = null,
+    double strokeWidth = 1, bool isAntialias = true)
+```
+
+Angles: 0 = right, 90 = down. Positive sweep = clockwise.
+
+### Text
+
+#### Drawing Text
+
+```csharp
+// Generic (defaults to Var4x5 font, White color)
+ctx.DrawText(
+    string text, double x, double y,
+    FontInfo? font = null, Paint? color = null, double? fontSize = null,
+    bool isAntialias = false)
+
+// Font-specific convenience methods
+ctx.DrawTextVar3x5(text, x, y, color: Colors.White)
+ctx.DrawTextMono3x5(text, x, y, color: Colors.White)
+ctx.DrawTextVar4x5(text, x, y, color: Colors.White)
+ctx.DrawTextMono4x5(text, x, y, color: Colors.White)
+ctx.DrawTextMono6x6(text, x, y, color: Colors.White)
+ctx.DrawTextMono7x10(text, x, y, color: Colors.White)
+ctx.DrawTextVar10x10(text, x, y, color: Colors.White)
+ctx.DrawTextMono10x10(text, x, y, color: Colors.White)
+ctx.DrawTextMono16x16(text, x, y, color: Colors.White)
+```
+
+#### Measuring Text
+
+```csharp
+double width = ctx.MeasureText(text, font, fontSize)
+
+// Font-specific variants
+double width = ctx.MeasureTextVar3x5(text)
+double width = ctx.MeasureTextMono4x5(text)
+// ... (same pattern for all fonts)
+```
+
+#### Available Fonts
+
+| Font | Style | Approx Size | Best For |
+|------|-------|-------------|----------|
+| `Fonts.Var3x5` | Proportional | 3x5 px | Compact text, labels |
+| `Fonts.Mono3x5` | Monospace | 3x5 px | Compact aligned text |
+| `Fonts.Var4x5` | Proportional | 4x5 px | Default text (good readability) |
+| `Fonts.Mono4x5` | Monospace | 4x5 px | Time display, counters |
+| `Fonts.Mono6x6` | Monospace | 6x6 px | Medium text |
+| `Fonts.Mono7x10` | Monospace | 7x10 px | Large text |
+| `Fonts.Var10x10` | Proportional | 10x10 px | Headlines |
+| `Fonts.Mono10x10` | Monospace | 10x10 px | Large aligned text |
+| `Fonts.Mono16x16` | Monospace | 16x16 px | Very large text (1-2 chars) |
+
+### Colors
+
+#### Color Struct
+
+```csharp
+// Constructor (double 0.0-1.0)
+new Color(double r, double g, double b, double a = 1.0)
+
+// Factory methods (double 0.0-1.0)
+Color.FromRgb(r, g, b)
+Color.FromRgba(r, g, b, a)
+Color.FromArgb(a, r, g, b)
+Color.FromHsl(hue, saturation, lightness)       // all 0.0-1.0
+Color.FromHsl360(hue, saturation, lightness)     // hue 0-360, rest 0.0-1.0
+Color.FromHsv(hue, saturation, value)            // all 0.0-1.0
+Color.FromHsv360(hue, saturation, value)         // hue 0-360, rest 0.0-1.0
+
+// Factory methods (byte 0-255)
+Color.FromRgbByte(r, g, b)
+Color.FromRgbaByte(r, g, b, a)
+Color.FromArgbByte(a, r, g, b)
+
+// Modifiers (return new Color)
+color.WithAlpha(double alpha)       // 0.0-1.0
+color.WithAlphaByte(byte alpha)     // 0-255
+
+// Properties
+color.R, color.G, color.B, color.A             // double 0.0-1.0
+color.RedByte, color.GreenByte, color.BlueByte, color.AlphaByte  // byte 0-255
+```
+
+#### Predefined Colors (Colors class)
+
+Common colors: `Colors.Black`, `Colors.White`, `Colors.Red`, `Colors.Green`, `Colors.Blue`, `Colors.Yellow`, `Colors.Cyan`, `Colors.Magenta`, `Colors.Orange`, `Colors.Purple`, `Colors.Pink`, `Colors.Lime`, `Colors.Gold`, `Colors.Silver`, `Colors.Gray`, `Colors.DarkBlue`, `Colors.DarkRed`, `Colors.DarkGreen`, `Colors.Coral`, `Colors.Crimson`, `Colors.DeepPink`, `Colors.DeepSkyBlue`, `Colors.DodgerBlue`, `Colors.Tomato`, `Colors.Turquoise`, `Colors.Violet`
+
+Special: `Colors.TransparentBlack`, `Colors.TransparentWhite`
+
+140+ named colors are available (standard CSS/X11 color names).
+
+### Paints (Advanced Fills)
+
+Colors are implicitly converted to solid paints. For gradients/patterns, use the `Paints` factory:
+
+```csharp
+// Solid color (implicit via Color)
+ctx.DrawCircle(12, 12, 5, colorFill: Colors.Red);
+
+// Linear gradient
+Paints.LinearGradient((0, 0), (24, 0), new[] { Colors.Red, Colors.Blue })
+Paints.VerticalGradient(24, Colors.Red, Colors.Blue)
+Paints.HorizontalGradient(24, Colors.Red, Colors.Blue)
+
+// Radial gradient
+Paints.RadialGradient((12, 12), 10, new[] { Colors.White, Colors.Black })
+
+// Sweep (angular) gradient
+Paints.SweepGradient((12, 12), new[] { Colors.Red, Colors.Green, Colors.Blue })
+
+// Perlin noise
+Paints.PerlinNoiseFractal(0.1, 0.1, 4, 42)
+Paints.PerlinNoiseTurbulence(0.1, 0.1, 4, 42)
+```
+
+### Animations
+
+#### Value Animations
+
+Create animations outside the scene, call `.Eval(ctx)` inside.
+The `Animate` factory class and `Repeat` enum are in `Pxl.Ui.CSharp`. The returned `Animation`/`ToggleAnimation` types live in `Pxl.Ui.CSharp.Animations` — use `var` and you won't need an extra `using`.
+
+```csharp
+// Create (outside scene)
+var anim = Animate.Linear(durationSeconds, startValue, endValue,
+    repeat: Repeat.Once, autoStart: true);
+
+// Available easings
+Animate.Linear(...)
+Animate.EaseIn(...)        // Quadratic: slow start
+Animate.EaseOut(...)       // Quadratic: slow end
+Animate.EaseInOut(...)     // Quadratic: slow start & end
+Animate.EaseInSine(...)
+Animate.EaseOutSine(...)
+Animate.EaseInOutSine(...)
+Animate.EaseInCubic(...)
+Animate.EaseOutCubic(...)
+Animate.EaseInOutCubic(...)
+Animate.Custom(easingFn, ...)  // Custom easing: Func<double, double> (0..1 -> 0..1)
+
+// Use in scene
+var x = anim.Eval(ctx);  // Returns current double value
+
+// Properties
+anim.Value      // double: current cached value
+anim.ValueInt   // int: current value as integer
+anim.IsRunning  // bool
+anim.IsAtEnd    // bool (Repeat.Once only)
+
+// Control
+anim.Pause();
+anim.Resume();
+anim.Restart();
+```
+
+#### Repeat Modes
+
+| Mode | Behavior |
+|------|----------|
+| `Repeat.Once` | Play once, stop at end value |
+| `Repeat.Loop` | Restart from beginning each cycle |
+| `Repeat.PingPong` | Alternate forward and reverse |
+
+#### Toggle Animation
+
+Cycles through discrete values at intervals:
+
+```csharp
+var toggle = Animate.ToggleValues(intervalSeconds, value1, value2, value3, ...);
+
+// In scene:
+var current = toggle.Eval(ctx);  // Returns current T value
+```
+
+### Images
+
+#### Static Images
+
+```csharp
+// Load (outside scene) — paths relative to script file
+var img = Image.LoadSingleImage("assets/myimage.png");
+
+// Transform (returns new instance, immutable)
+var resized = img.Resize(24, 24, useAntiAlias: false);
+var cropped = img.Crop(left: 2, top: 2, right: 2, bottom: 2);
+var region = img.CropRegion(x: 0, y: 0, width: 16, height: 16);
+
+// Draw (inside scene)
+ctx.DrawImage(img, x, y);
+```
+
+#### Animated GIFs
+
+```csharp
+// Load
+var gif = Image.LoadAnimatedGif("assets/animation.gif");
+
+// Transform
+var resized = gif.Resize(24, 24);
+var cropped = gif.Crop(left: 2, top: 2);
+var region = gif.CropRegion(0, 0, 20, 20);
+var slowed = gif.WithFrameDuration(200);  // ms per frame
+
+// Draw (auto-animates based on ctx.Elapsed)
+ctx.DrawImage(gif, x, y, repeat: true);
+
+// Properties
+gif.FrameCount, gif.Width, gif.Height, gif.TotalDuration
+```
+
+#### Sprite Maps
+
+```csharp
+// Create from image
+var sheet = Image.LoadSingleImage("assets/spritesheet.png");
+var sprites = sheet.ToSpriteMap(cellWidth: 16, cellHeight: 16, frameDurationMs: 100);
+
+// Access cells
+var cell = sprites[row, col];  // Returns SingleImage
+
+// Create animation from cells
+var walkAnim = sprites.CreateAnimation((0, 0), (0, 1), (0, 2), (0, 3));
+ctx.DrawImage(walkAnim, x, y);
+
+// Properties
+sprites.Rows, sprites.Columns, sprites.CellWidth, sprites.CellHeight
+```
+
+### Direct Pixel Access
+
+```csharp
+// Read/write individual pixels
+ctx.SetPixel(x, y, color);
+Color c = ctx.GetPixel(x, y);
+
+// Via Pixels property
+var pixels = ctx.Pixels;
+pixels[x, y] = Colors.Red;
+Color c = pixels[x, y];
+pixels[index] = Colors.Blue;  // Linear index (y * width + x)
+
+// Iterate all pixels
+foreach (var cell in ctx.Pixels.Cells)
+{
+    // cell.X, cell.Y, cell.Color
+}
+
+// Bulk set
+ctx.SetPixels(colorArray, BlendMode.Source);
+```
+
+### Layers (Fork / NewLayer)
+
+```csharp
+// Fork: copies current canvas state into a new layer
+var layer = ctx.Fork();
+layer.DrawCircle(12, 12, 8, colorFill: Colors.Red);
+layer.Apply(BlendMode.SourceOver);
+
+// NewLayer: blank canvas
+var layer = ctx.NewLayer(clearColor: Colors.Transparent);
+layer.DrawCircle(12, 12, 8, colorFill: Colors.Yellow);
+layer.Apply(BlendMode.Screen);
+```
+
+#### Layer Transforms
+
+Transforms accumulate on the layer and are applied automatically when calling `Apply()`:
+
+```csharp
+var layer = ctx.NewLayer(clearColor: Colors.Transparent);
+layer.DrawCircle(12, 12, 5, colorFill: Colors.Red);
+
+// Transforms (call order matters — they accumulate)
+layer.Scale(2.0);                    // uniform scale
+layer.Scale(2.0, 1.5);              // non-uniform scale
+layer.Translate(5, 3);              // move
+layer.Rotate(45);                   // rotate around layer center (degrees)
+layer.Rotate(45, 12, 12);           // rotate around specific point
+
+// Apply with blend mode and interpolation
+layer.Apply(
+    BlendMode.SourceOver,                // default: SourceOver
+    Interpolation.NearestNeighbor);      // default: NearestNeighbor (sharp pixels)
+```
+
+**Interpolation modes:**
+- `Interpolation.NearestNeighbor` — sharp, blocky pixels (default, ideal for pixel art)
+- `Interpolation.Linear` — smooth, bilinear interpolation
+
+#### Common Blend Modes
+
+| Mode | Effect |
+|------|--------|
+| `BlendMode.SourceOver` | Standard alpha blending (default) |
+| `BlendMode.Screen` | Lighten (additive-like) |
+| `BlendMode.Multiply` | Darken |
+| `BlendMode.Plus` | Add colors (clamp to white) |
+| `BlendMode.Source` | Replace destination |
+| `BlendMode.SourceIn` | Mask source by destination alpha |
+| `BlendMode.SourceOut` | Inverse mask |
+| `BlendMode.Xor` | XOR |

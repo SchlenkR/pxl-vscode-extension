@@ -110,6 +110,11 @@
         "command": "pxl.revealInExplorer",
         "title": "Reveal in Explorer View",
         "icon": "$(folder-opened)"
+      },
+      {
+        "command": "pxl.openDevDocu",
+        "title": "PXL Clock: Open Dev Documentation",
+        "icon": "$(book)"
       }
     ],
     "viewsContainers": {
@@ -183,6 +188,11 @@
         },
         {
           "command": "pxl.refreshFiles",
+          "when": "view == pxlFiles",
+          "group": "navigation"
+        },
+        {
+          "command": "pxl.openDevDocu",
           "when": "view == pxlFiles",
           "group": "navigation"
         }

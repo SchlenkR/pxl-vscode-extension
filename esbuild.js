@@ -17,6 +17,17 @@ async function main() {
     console.warn("[esbuild] Warning: pxl-clock template not found at", templateSrc);
   }
 
+  // Copy dev documentation (llms.txt) from pxl-clock repo
+  const docsSrc = path.join(__dirname, "../pxl-clock/llms.txt");
+  const docsDest = path.join(__dirname, "media/docs/llms.txt");
+  if (fs.existsSync(docsSrc)) {
+    fs.mkdirSync(path.dirname(docsDest), { recursive: true });
+    fs.copyFileSync(docsSrc, docsDest);
+    console.log("[esbuild] Copied dev documentation from pxl-clock");
+  } else {
+    console.warn("[esbuild] Warning: pxl-clock llms.txt not found at", docsSrc);
+  }
+
   const ctx = await esbuild.context({
     entryPoints: ["src/extension.ts"],
     bundle: true,

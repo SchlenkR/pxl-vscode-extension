@@ -602,6 +602,41 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pxl.openDevDocu", async () => {
+      // Try workspace llms.txt first (from "Get Example Pixograms"), then bundled copy
+      const workspaceDir = getWorkspaceDir();
+      const candidates = [
+        workspaceDir ? path.join(workspaceDir, "llms.txt") : "",
+        vscode.Uri.joinPath(context.extensionUri, "media", "docs", "llms.txt").fsPath,
+      ].filter(Boolean);
+
+      let docPath: string | undefined;
+      for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+          docPath = candidate;
+          break;
+        }
+      }
+
+      if (!docPath) {
+        vscode.window.showErrorMessage(
+          "Dev documentation not found. Run 'Get Example Pixograms' first, or rebuild the extension."
+        );
+        return;
+      }
+
+      // Copy to a .md temp file so VS Code renders it as Markdown preview
+      const tmpDir = path.join(context.globalStorageUri.fsPath, "docs");
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const mdPath = path.join(tmpDir, "PXL-Dev-Documentation.md");
+      fs.copyFileSync(docPath, mdPath);
+
+      const mdUri = vscode.Uri.file(mdPath);
+      await vscode.commands.executeCommand("markdown.showPreview", mdUri);
+    })
+  );
+
   context.subscriptions.push({
     dispose: () => {
       disposed = true;
