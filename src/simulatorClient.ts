@@ -16,7 +16,7 @@ export interface SimulatorClient {
   isConnected(): boolean;
   runScript(filePath: string): Promise<void>;
   stopScript(): Promise<void>;
-  restartScript(): Promise<void>;
+
   publishPixogram(filePath: string, deviceAddress: string): Promise<void>;
   onFrame(handler: (frame: Uint8Array) => void): vscode.Disposable;
   onLog(handler: (message: string) => void): vscode.Disposable;
@@ -154,11 +154,6 @@ export function createSimulatorClient(
     await apiPost("/api/watcher/stop");
   }
 
-  async function restartScript(): Promise<void> {
-    log("Restarting script...");
-    await apiPost("/api/watcher/restart");
-  }
-
   async function publishPixogram(filePath: string, deviceAddress: string): Promise<void> {
     log(`Publishing ${filePath} to ${deviceAddress}...`);
     await httpRequest("POST", "/api/publish", { scriptPath: filePath, deviceAddress }, 60_000);
@@ -192,7 +187,6 @@ export function createSimulatorClient(
     isConnected: () => connected,
     runScript,
     stopScript,
-    restartScript,
     publishPixogram,
     onFrame,
     onLog,

@@ -94,17 +94,12 @@ export function activate(context: vscode.ExtensionContext) {
   // Refresh file tree when scripts change
   client.onScriptsChanged(() => fileExplorer.refresh());
 
-  // Auto-restart running script when a .cs file is saved
+  // Auto-run script when a .cs file is saved (same as pxl.runScript)
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (doc) => {
       if (!doc.fileName.endsWith(".cs")) return;
       if (!statusProvider.getRunningFile()) return;
-
-      try {
-        await client.restartScript();
-      } catch (err) {
-        outputChannel.appendLine(`Auto-restart failed: ${err}`);
-      }
+      await runPixogram(doc.fileName);
     })
   );
 
@@ -249,6 +244,19 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  async function runPixogram(filePath: string) {
+    if (!(await ensureSimulatorRunning())) return;
+
+    try {
+      outputChannel.show(true);
+      await client.runScript(filePath);
+      statusProvider.refresh();
+      vscode.commands.executeCommand("pxlSimulatorView.focus");
+    } catch (err) {
+      vscode.window.showErrorMessage(`Failed to run script: ${err}`);
+    }
+  }
+
   context.subscriptions.push(
     vscode.commands.registerCommand("pxl.runScript", async () => {
       const editor = vscode.window.activeTextEditor;
@@ -258,17 +266,15 @@ export function activate(context: vscode.ExtensionContext) {
         );
         return;
       }
+      await runPixogram(editor.document.fileName);
+    })
+  );
 
-      if (!(await ensureSimulatorRunning())) return;
-
-      try {
-        outputChannel.show(true);
-        await client.runScript(editor.document.fileName);
-        statusProvider.refresh();
-        vscode.commands.executeCommand("pxlSimulatorView.focus");
-      } catch (err) {
-        vscode.window.showErrorMessage(`Failed to run script: ${err}`);
-      }
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pxl.restartScript", async () => {
+      const running = statusProvider.getRunningFile();
+      if (!running) return;
+      await runPixogram(running);
     })
   );
 
@@ -320,16 +326,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "pxl.runFromTree",
       async (item: PxlFileItem) => {
-        if (!(await ensureSimulatorRunning())) return;
-
-        try {
-          outputChannel.show(true);
-          await client.runScript(item.node.uri.fsPath);
-          statusProvider.refresh();
-          vscode.commands.executeCommand("pxlSimulatorView.focus");
-        } catch (err) {
-          vscode.window.showErrorMessage(`Failed to run script: ${err}`);
-        }
+        await runPixogram(item.node.uri.fsPath);
       }
     )
   );
@@ -541,9 +538,21 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("pxl.newPixogram", async (item: PxlFileItem) => {
-      const folderUri = item?.node?.uri;
-      if (!folderUri) return;
+    vscode.commands.registerCommand("pxl.newPixogram", async (item?: PxlFileItem) => {
+      let folderUri = item?.node?.uri;
+
+      // Called from Command Palette (no tree item) → show folder picker
+      if (!folderUri) {
+        const picks = await vscode.window.showOpenDialog({
+          canSelectFiles: false,
+          canSelectFolders: true,
+          canSelectMany: false,
+          openLabel: "Select folder",
+          defaultUri: vscode.workspace.workspaceFolders?.[0]?.uri,
+        });
+        if (!picks || picks.length === 0) return;
+        folderUri = picks[0];
+      }
 
       const name = await vscode.window.showInputBox({
         prompt: "Name for the new pixogram",
