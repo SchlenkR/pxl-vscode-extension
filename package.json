@@ -2,7 +2,7 @@
   "name": "pxl-clock",
   "displayName": "PXL Clock",
   "description": "Develop and preview pixograms for the PXL Clock directly in VS Code",
-  "version": "1.0.11",
+  "version": "1.0.14",
   "publisher": "pxlclock",
   "icon": "media/logo.png",
   "homepage": "https://www.pxlclock.com/?ref=RONALD",
@@ -235,17 +235,50 @@
         }
       ],
       "commandPalette": [
-        { "command": "pxl.openSimulatorToSide", "when": "false" },
-        { "command": "pxl.openFile", "when": "false" },
-        { "command": "pxl.refreshFiles", "when": "false" },
-        { "command": "pxl.refreshStatus", "when": "false" },
-        { "command": "pxl.restartScript", "when": "false" },
-        { "command": "pxl.runFromTree", "when": "false" },
-        { "command": "pxl.publishFromTree", "when": "false" },
-        { "command": "pxl.publishPixogram", "when": "false" },
-        { "command": "pxl.newPixogram", "when": "false" },
-        { "command": "pxl.newFolder", "when": "false" },
-        { "command": "pxl.revealInExplorer", "when": "false" }
+        {
+          "command": "pxl.openSimulatorToSide",
+          "when": "false"
+        },
+        {
+          "command": "pxl.openFile",
+          "when": "false"
+        },
+        {
+          "command": "pxl.refreshFiles",
+          "when": "false"
+        },
+        {
+          "command": "pxl.refreshStatus",
+          "when": "false"
+        },
+        {
+          "command": "pxl.restartScript",
+          "when": "false"
+        },
+        {
+          "command": "pxl.runFromTree",
+          "when": "false"
+        },
+        {
+          "command": "pxl.publishFromTree",
+          "when": "false"
+        },
+        {
+          "command": "pxl.publishPixogram",
+          "when": "false"
+        },
+        {
+          "command": "pxl.newPixogram",
+          "when": "false"
+        },
+        {
+          "command": "pxl.newFolder",
+          "when": "false"
+        },
+        {
+          "command": "pxl.revealInExplorer",
+          "when": "false"
+        }
       ]
     }
   },
@@ -259,7 +292,7 @@
     "watch": "node esbuild.js --watch",
     "package": "bash build-simulator.sh --current && npx @vscode/vsce package",
     "package:all": "bash build-simulator.sh && npx @vscode/vsce package",
-    "publish": "bash build-simulator.sh && npx @vscode/vsce publish ${AZURE_DEVOPS_VSCE_PXLCLOCK_PAT:+--pat $AZURE_DEVOPS_VSCE_PXLCLOCK_PAT}"
+    "publish": "npm version patch --no-git-tag-version && bash build-simulator.sh && npx @vscode/vsce publish ${AZURE_DEVOPS_VSCE_PXLCLOCK_PAT:+--pat $AZURE_DEVOPS_VSCE_PXLCLOCK_PAT} && git add package.json && git commit -m \"v$(node -p \"require('./package.json').version\")\" && git push"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

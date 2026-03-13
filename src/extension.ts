@@ -94,6 +94,20 @@ export function activate(context: vscode.ExtensionContext) {
   // Refresh file tree when scripts change
   client.onScriptsChanged(() => fileExplorer.refresh());
 
+  // Auto-restart running script when a .cs file is saved
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument(async (doc) => {
+      if (!doc.fileName.endsWith(".cs")) return;
+      if (!statusProvider.getRunningFile()) return;
+
+      try {
+        await client.restartScript();
+      } catch (err) {
+        outputChannel.appendLine(`Auto-restart failed: ${err}`);
+      }
+    })
+  );
+
   // Keep file explorer in sync with running file
   statusProvider.onRunningFileChanged((file) => {
     fileExplorer.setRunningFile(file);
