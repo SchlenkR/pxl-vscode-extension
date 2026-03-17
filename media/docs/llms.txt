@@ -23,7 +23,7 @@ A **pixogram** is a C# script that renders animated graphics on a 24x24 pixel di
 // description: Brief description of what this pixogram does
 // ---
 
-#:package Pxl@0.0.58
+#:package Pxl@*
 
 using Pxl.Ui.CSharp;
 
@@ -72,7 +72,7 @@ var scene = (DrawingContext ctx) =>
 // description: Minimal digital clock
 // ---
 
-#:package Pxl@0.0.58
+#:package Pxl@*
 
 using Pxl.Ui.CSharp;
 
@@ -101,7 +101,7 @@ var scene = (DrawingContext ctx) =>
 // author: Example
 // ---
 
-#:package Pxl@0.0.58
+#:package Pxl@*
 
 using Pxl.Ui.CSharp;
 
@@ -128,7 +128,7 @@ var scene = (DrawingContext ctx) =>
 // author: Example
 // ---
 
-#:package Pxl@0.0.58
+#:package Pxl@*
 
 using Pxl.Ui.CSharp;
 
@@ -174,7 +174,7 @@ Your code runs **inside the daemon process** on the PXL Clock device. The constr
 // duration: 15.0          <- optional: default display duration in seconds
 // ---
 
-#:package Pxl@0.0.58
+#:package Pxl@*
 
 using Pxl.Ui.CSharp;
 
