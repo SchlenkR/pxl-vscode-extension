@@ -12,6 +12,69 @@ A **pixogram** is a C# script that renders animated graphics on a 24x24 pixel di
 - **Drawing order**: Later draws appear on top (painter's algorithm)
 - **Anti-aliasing**: Disabled by default (pixel art aesthetics), per-method opt-in
 
+## Development Environment
+
+### VS Code Extension (Recommended)
+
+The [**PXL Clock VS Code Extension**](https://marketplace.visualstudio.com/items?itemName=pxlclock.pxl-clock) (`pxlclock.pxl-clock`) is the primary development tool. It includes:
+
+- **Built-in Simulator** — auto-starts in the background, live preview in the sidebar
+- **Live Hot Reload** — save and see changes instantly
+- **Run/Stop/Restart** — one-click controls for `.cs` Pixograms
+- **Publish to Device** — deploy to a real PXL Clock over the network
+- **Device Discovery** — auto-finds PXL Clocks on the local network
+- **IntelliSense** — C# completions, diagnostics, signature help (Roslyn-powered)
+
+### Pxl.Render — Offline Rendering Tool
+
+`Pxl.Render` is a CLI tool (NuGet global tool) that renders Pixograms to animated images or video without a device.
+
+**Install:** `dotnet tool install --global Pxl.Render`
+
+**Usage:**
+```bash
+pxl-render <file.cs> [options]
+
+# Options:
+-o, --output <path>       Output file/directory (default: output.gif)
+-f, --format <format>     gif | apng | webp | png | pxl | stdout (default: gif)
+-d, --duration <secs>     Duration to render in seconds (default: 5.0)
+--fps <int>               Frames per second (default: 40)
+--width <int>             Canvas width (default: 24)
+--height <int>            Canvas height (default: 24)
+-s, --scale <int>         Output scale factor (default: 1, e.g. 10 = 240x240)
+-m, --mode <mode>         Render mode: raw | flat | clock (default: raw)
+--gap <float>             Pixel gap as fraction of cell size (default: 0 for raw, 0.05 for flat/clock)
+-t, --timelapse <int>     Timelapse factor: keep every Nth frame (default: 1 = no skip)
+--start-time <datetime>   Virtual start time (default: current UTC time)
+--stdin                   Read script from stdin instead of file
+```
+
+**Render modes:**
+- `raw` — Direct pixel output, no gaps (1:1 with display)
+- `flat` — Visible gaps between LEDs (grid/matrix look)
+- `clock` — LED glow effect with radial dimming (closest to real device)
+
+**Examples:**
+```bash
+# 10-second GIF with clock-style rendering, scaled 10x
+pxl-render MyClock.cs -o preview.gif -d 10 -s 10 -m clock
+
+# Animated WebP (smaller than GIF, full color)
+pxl-render MyClock.cs -f webp -o preview.webp -s 10
+
+# Export individual PNG frames
+pxl-render MyClock.cs -f png -o frames/ -d 3
+
+# Pipe raw RGB to ffmpeg for video
+pxl-render MyClock.cs -f stdout -s 10 | ffmpeg -f rawvideo -pix_fmt rgb24 -s 240x240 -r 40 -i - output.mp4
+
+# Render a clock face at a specific time
+pxl-render MyClock.cs --start-time "2025-12-31T23:59:50" -d 20 -o nye.gif
+```
+
+---
+
 ## Quick Start
 
 ```csharp
@@ -53,7 +116,7 @@ var scene = (DrawingContext ctx) =>
 4. **Animate.Eval() is cached** — safe to call multiple times per frame
 5. **Image paths are relative** to the script file — place assets in an `assets/` subfolder
 6. **Colors implicitly convert to Paint** — pass colors directly where `Paint` is expected
-7. **`#:package Pxl@<version>`** — use this directive to reference the PXL NuGet package. Use the latest version from https://www.nuget.org/packages/Pxl — or check existing `.cs` files in the project for the current version number
+7. **`#:package Pxl@*`** — use this directive to reference the PXL NuGet package. The wildcard `*` automatically resolves to the latest version
 8. **Metadata header** — use `// ---` blocks for app name, type, author, description
 9. **appType values**: `ClockFace` (shows time) or `Scene` (decorative animation)
 10. **Performance** — prefer `SetPixel`/`GetPixel` for per-pixel work over drawing shapes for each pixel
