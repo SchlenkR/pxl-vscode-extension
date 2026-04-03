@@ -41,16 +41,14 @@ else
   RIDS=("${ALL_RIDS[@]}")
 fi
 
-echo "=== Building Simulator UI ==="
+echo "=== Building npm dependencies ==="
 cd "$PXL_SOFTWARE_REPO"
 npm i --silent
 
 cd src/pxl-receiver-canvas
 npm run build --silent
 
-cd ../pxl-simulator-ui
-npm run build --silent
-
+cd "$PXL_SOFTWARE_REPO"
 echo "=== Publishing Simulator Host ==="
 rm -rf "$OUT_DIR"
 
@@ -69,7 +67,6 @@ done
 # Clean up: remove PDB files and dev-only config from output
 for RID in "${RIDS[@]}"; do
   rm -f "$OUT_DIR/$RID"/*.pdb
-  rm -f "$OUT_DIR/$RID"/spa.proxy.json
   rm -f "$OUT_DIR/$RID"/appsettings.Development.json
 done
 
