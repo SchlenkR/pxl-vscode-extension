@@ -35,19 +35,34 @@ The [**PXL Clock VS Code Extension**](https://marketplace.visualstudio.com/items
 ```bash
 pxl-render <file.cs> [options]
 
+# Inputs:
+  <file.cs>               C# pixogram script
+  --stdin                 Read script from stdin
+
+# Outputs (repeat for multiple):
+  --output <path>         File output; format inferred from extension:
+                            .gif   → animated GIF
+                            .apng  → animated PNG
+                            .webp  → animated WebP
+                            .pxl   → hex text frames
+                            <dir>  → PNG frames directory
+  --stdout                Stream raw RGB24 bytes to stdout
+  --device <ip>           Stream to a PXL device at <ip> (port 5002)
+
 # Options:
--o, --output <path>       Output file/directory (default: output.gif)
--f, --format <format>     gif | apng | webp | png | pxl | stdout (default: gif)
--d, --duration <secs>     Duration to render in seconds (default: 5.0)
---fps <int>               Frames per second (default: 40)
---width <int>             Canvas width (default: 24)
---height <int>            Canvas height (default: 24)
--s, --scale <int>         Output scale factor (default: 1, e.g. 10 = 240x240)
--m, --mode <mode>         Render mode: raw | flat | clock (default: raw)
---gap <float>             Pixel gap as fraction of cell size (default: 0 for raw, 0.05 for flat/clock)
--t, --timelapse <int>     Timelapse factor: keep every Nth frame (default: 1 = no skip)
---start-time <datetime>   Virtual start time (default: current UTC time)
---stdin                   Read script from stdin instead of file
+  --duration <secs>       Duration to render in seconds (required)
+  --fps <int>             Frames per second (default: 40)
+  --width <int>           Canvas width in pixels (default: 24)
+  --height <int>          Canvas height in pixels (default: 24)
+  --scale <int>           Output scale factor for file outputs (default: 1)
+  --mode <mode>           Render mode: raw | flat | clock (default: raw)
+  --gap <float>           Pixel gap as fraction of cell size (default: 0 for raw, 0.05 for flat/clock)
+  --timelapse <int>       Keep every Nth frame for file outputs (default: 1)
+  --start-time <datetime> Virtual start time (default: current time)
+
+# Examples:
+  pxl-render MyClock.cs --output preview.gif --duration 10
+  pxl-render MyClock.cs --output preview.gif --output preview.webp --scale 10 --mode clock --duration 5
 ```
 
 **Render modes:**
