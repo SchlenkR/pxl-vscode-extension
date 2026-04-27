@@ -6,7 +6,7 @@ import { createSimulatorClient } from "./simulatorClient";
 import { SimulatorPanel, SimulatorSidebarProvider } from "./simulatorPanel";
 import { FileExplorerProvider, PxlFileItem } from "./fileExplorerProvider";
 import { StatusSidebarProvider } from "./statusPanel";
-import { httpRequest, findFreePort, setBaseUrl } from "./shared";
+import { httpRequest, findFreePort, setBaseUrl, setExternalBaseUrl } from "./shared";
 
 function pingSimulator(): Promise<boolean> {
   return httpRequest("GET", "/metadata", undefined, 2000)
@@ -137,11 +137,22 @@ export function activate(context: vscode.ExtensionContext) {
       }
     });
 
+    let stderrShownAt = 0;
     proc.stderr?.on("data", (data: Buffer) => {
+      let hadOutput = false;
       for (const line of data.toString().split("\n")) {
         const trimmed = line.trimEnd();
         if (trimmed) {
           outputChannel.appendLine(`[host:err] ${trimmed}`);
+          hadOutput = true;
+        }
+      }
+      // Throttle: only surface the output channel at most once every 5s
+      // (avoids harassment when the host emits an stderr storm).
+      if (hadOutput) {
+        const now = Date.now();
+        if (now - stderrShownAt > 5000) {
+          stderrShownAt = now;
           outputChannel.show(true);
         }
       }
@@ -179,7 +190,11 @@ export function activate(context: vscode.ExtensionContext) {
         return false;
       }
       setBaseUrl(`http://127.0.0.1:${chosenPort}`);
-      outputChannel.appendLine(`Using port ${chosenPort} for Simulator Host.`);
+      const externalUri = await vscode.env.asExternalUri(
+        vscode.Uri.parse(`http://127.0.0.1:${chosenPort}`)
+      );
+      setExternalBaseUrl(externalUri.toString(true).replace(/\/$/, ""));
+      outputChannel.appendLine(`Using port ${chosenPort} for Simulator Host (external: ${externalUri.toString(true)}).`);
     }
 
     // Already responding? Done.
@@ -325,8 +340,14 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "pxl.runFromTree",
-      async (item: PxlFileItem) => {
-        await runPixogram(item.node.uri.fsPath);
+      async (item?: PxlFileItem) => {
+        const filePath = item?.node?.uri?.fsPath
+          ?? vscode.window.activeTextEditor?.document.fileName;
+        if (!filePath || !filePath.endsWith(".cs")) {
+          vscode.window.showWarningMessage("Open or select a .cs file to run as a pixogram.");
+          return;
+        }
+        await runPixogram(filePath);
       }
     )
   );
@@ -387,8 +408,14 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "pxl.publishFromTree",
-      async (item: PxlFileItem) => {
-        await publishPixogram(item.node.uri.fsPath);
+      async (item?: PxlFileItem) => {
+        const filePath = item?.node?.uri?.fsPath
+          ?? vscode.window.activeTextEditor?.document.fileName;
+        if (!filePath || !filePath.endsWith(".cs")) {
+          vscode.window.showWarningMessage("Open or select a .cs file to publish.");
+          return;
+        }
+        await publishPixogram(filePath);
       }
     )
   );

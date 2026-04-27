@@ -14,6 +14,19 @@ export function getBaseUrl(): string {
   return baseUrl;
 }
 
+// External base URL resolved via vscode.env.asExternalUri.
+// In desktop VS Code this equals baseUrl; in Codespaces it's the forwarded URL.
+// Used by webviews so the browser can reach the simulator host.
+let externalBaseUrl = "";
+
+export function setExternalBaseUrl(url: string): void {
+  externalBaseUrl = url;
+}
+
+export function getExternalBaseUrl(): string {
+  return externalBaseUrl || baseUrl;
+}
+
 function getPortRange(): { start: number; end: number } {
   const raw = vscode.workspace.getConfiguration("pxl").get<string>("simulatorPortRange", "5010-5099");
   const match = raw.match(/^(\d+)-(\d+)$/);

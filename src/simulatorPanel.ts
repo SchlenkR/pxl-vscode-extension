@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { getBaseUrl, getNonce } from "./shared";
+import { getExternalBaseUrl, getNonce } from "./shared";
 
 /** Generate HTML that loads the bundled React webview */
 function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
@@ -8,7 +8,7 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
     vscode.Uri.joinPath(extensionUri, "dist", "simulatorWebview.js")
   );
 
-  const hostUrl = getBaseUrl();
+  const hostUrl = getExternalBaseUrl();
   const wsUrl = hostUrl.replace(/^http/, "ws");
 
   return /* html */ `<!DOCTYPE html>

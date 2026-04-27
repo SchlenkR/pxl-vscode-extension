@@ -20,6 +20,7 @@ export class PxlFileItem extends vscode.TreeItem {
   ) {
     super(node.name, collapsibleState);
 
+    this.id = node.uri.fsPath;
     this.tooltip = node.uri.fsPath;
     this.resourceUri = node.uri;
 
@@ -59,6 +60,7 @@ export class FileExplorerProvider
   private extensionUri?: vscode.Uri;
   private iconFrame = 0;
   private animationTimer: ReturnType<typeof setInterval> | null = null;
+  private itemsByPath = new Map<string, PxlFileItem>();
 
   constructor(extensionUri?: vscode.Uri) {
     this.extensionUri = extensionUri;
@@ -73,10 +75,15 @@ export class FileExplorerProvider
     this.runningFile = filePath;
 
     if (filePath && !this.animationTimer) {
-      // Start icon animation when a file is running
+      // Start icon animation when a file is running.
+      // Refresh only the running item (not the whole tree) so VSCode-internal
+      // tree-tracking doesn't grow per tick.
       this.animationTimer = setInterval(() => {
         this.iconFrame++;
-        this._onDidChangeTreeData.fire();
+        const runningItem = this.findRunningItem();
+        if (runningItem) {
+          this._onDidChangeTreeData.fire(runningItem);
+        }
       }, 800);
     } else if (!filePath && this.animationTimer) {
       // Stop animation when nothing is running
@@ -90,7 +97,13 @@ export class FileExplorerProvider
   }
 
   refresh(): void {
+    this.itemsByPath.clear();
     this._onDidChangeTreeData.fire();
+  }
+
+  private findRunningItem(): PxlFileItem | undefined {
+    if (!this.runningFile) return undefined;
+    return this.itemsByPath.get(this.runningFile);
   }
 
   dispose(): void {
@@ -131,7 +144,9 @@ export class FileExplorerProvider
       !node.isDirectory &&
       this.runningFile !== "" &&
       this.runningFile.endsWith(node.name);
-    return new PxlFileItem(node, state, isRunning, this.iconFrame, this.extensionUri);
+    const item = new PxlFileItem(node, state, isRunning, this.iconFrame, this.extensionUri);
+    this.itemsByPath.set(node.uri.fsPath, item);
+    return item;
   }
 
   private async buildTree(dirUri: vscode.Uri): Promise<DirNode[]> {

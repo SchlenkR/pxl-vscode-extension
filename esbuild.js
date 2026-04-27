@@ -11,7 +11,10 @@ async function main() {
   const templateDest = path.join(__dirname, "media/templates/new-pixogram.cs");
   if (fs.existsSync(templateSrc)) {
     fs.mkdirSync(path.dirname(templateDest), { recursive: true });
-    fs.copyFileSync(templateSrc, templateDest);
+    let templateContent = fs.readFileSync(templateSrc, "utf8");
+    // Replace pinned package version with wildcard so new pixograms always use the latest
+    templateContent = templateContent.replace(/^(#:package\s+Pxl@).+$/m, "$1*");
+    fs.writeFileSync(templateDest, templateContent);
     console.log("[esbuild] Copied pixogram template from pxl-clock");
   } else {
     console.warn("[esbuild] Warning: pxl-clock template not found at", templateSrc);
