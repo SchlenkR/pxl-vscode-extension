@@ -26,8 +26,9 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
     #root { height: 100vh; }
     .app-content { flex: 1; display: flex; overflow: hidden; }
     .simulator-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .ledMatrix { display: grid; gap: 0.3%; box-sizing: border-box; margin-left: auto; margin-right: auto; width: 100%; height: 100%; }
-    .led { position: relative; border-radius: 0; overflow: visible; box-sizing: border-box; }
+    /* LedMatrix is now a single <canvas> driven by pxl-device-view. The CSS
+       just makes it fill its parent — pixel scaling happens inside. */
+    .ledMatrix { display: block; width: 100%; height: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
   </style>
 </head>
 <body>

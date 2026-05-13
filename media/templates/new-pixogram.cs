@@ -13,10 +13,10 @@ using Pxl.Ui.CSharp;
 // State variables go here (persist between frames)
 var count = 0;
 
-// We always need to return a DrawingContext delegate that contains our drawing code.
+// We always need to return a RasterSurface delegate that contains our drawing code.
 // This is what gets called every frame to render the pixogram.
 // There always has to be exactly one 'scene' delegate with this signature.
-var scene = (DrawingContext ctx) =>
+var scene = (RasterSurface ctx) =>
 {
     // Drawing code here — runs every frame
 

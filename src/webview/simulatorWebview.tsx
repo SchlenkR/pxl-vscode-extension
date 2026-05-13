@@ -11,7 +11,7 @@ const vscodeApi = acquireVsCodeApi();
 const BASE_URL = document.querySelector<HTMLMetaElement>('meta[name="pxl-base-url"]')!.content;
 
 function App() {
-  const [mode, setMode] = useState<VisualConfigName>("clock");
+  const [mode, setMode] = useState<VisualConfigName>("photoreal");
 
   const cfg: LedMatrixConfig = {
     width: 24,
@@ -104,6 +104,7 @@ function ModeToggle({ mode, onChange }: { mode: VisualConfigName; onChange: (m: 
     <div style={{ display: "flex", border: "1px solid var(--vscode-widget-border, #444)", borderRadius: 4, overflow: "hidden" }}>
       <button style={btnStyle(mode === "flat")} onClick={() => onChange("flat")}>Flat</button>
       <button style={btnStyle(mode === "clock")} onClick={() => onChange("clock")}>Clock</button>
+      <button style={btnStyle(mode === "photoreal")} onClick={() => onChange("photoreal")}>Photoreal</button>
     </div>
   );
 }
